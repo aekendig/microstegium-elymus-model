@@ -1,0 +1,21 @@
+﻿parameter,symbol,value,units,reference
+perennial adult survival,m.p,0.95,year^-1^,Malmstrom et al. 2005
+annual seed survival,s.a,0.74,year^-1^,Huebner 2011
+perennial seed survival,s.s,0.76,year^-1^,Robocker et al. 1953
+annual germination,gamma.a,0.7,year^-1^,Warren et al. 2013
+perennial germination,gamma.s,0.66,year^-1^,Robocker et al. 1953
+litter suppression of annual germination,alpha.aL,-0.0009,g^-1^ year^-1^,Foster and Gross 1998
+litter suppression of perennial germination,alpha.sL,-0.0009,g^-1^ year^-1^,Foster and Gross 1998
+litter decomposition rate,b,0.56,year^-1^,Kourtev et al. 2002
+annual summer survival,h.a,0.95,year^-1^,Warren et al. 2013
+perennial seedlingsummer survival,h.s,0.4,year^-1^,Mottl et al. 2006
+perennial adult summer survival,h.p,0.83,year^-1^,Mottl et al. 2006
+annual seed production,lambda.a,6500,seeds year^-1^,Wilson et al. 2015
+perennial seed production,lambda.p,435,seeds year^-1^,Stevens 1957
+annual-annual competition,alpha.aa,0.122,year^-1^,Leicht et al. 2005
+seedling-annual competition,alpha.as,0.357,year^-1^,Leicht et al. 2005
+seedling-seedling competition,alpha.ss,0.002,year^-1^,Leicht et al. 2005
+annual-seedling competition,alpha.sa,0.724,year^-1^,Leicht et al. 2005
+biomass-seed conversion,c.a,0.005,g seeds^-1^ year^-1^,Wilson et al. 2015
+disease suppression of annual seed production,tol.a,0.19,year^-1^,Flory et al. 2011
+disease suppression of perennial seed production,tol.p,0.19,year^-1^,Flory et al. 2011

@@ -1,0 +1,7 @@
+﻿parameter,symbol,value,units,reference
+annual germination,gamma.a,0.29,year^-1^,Huebner 2011
+annual intraspecific seed competition,alpha.aa,"0.001, 0.015, 0.054",year^-1^,Leicht et al. 2005
+annual interspecific competition,alpha.as,"0.054, 0.910, 17.919",year^-1^,Leicht et al. 2005
+perennial intraspecific competition,alpha.ss,"0.006, 0.011, 0.049",year^-1^,Leicht et al. 2005
+perennial interspecific seed competition,alpha.sa,"1.347, 9.574, 23.070",year^-1^,Leicht et al. 2005
+disease suppression of seed production,tol,0.6,year^-1^,Stricker et al. 2016
