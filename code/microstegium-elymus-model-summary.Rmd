@@ -1,7 +1,7 @@
 ---
 title: "microstegium-elymus-model-summary"
 author: "Amy Kendig"
-date: "10/15/2019"
+date: "10/17/2019"
 output: pdf_document
 ---
 
@@ -101,7 +101,7 @@ perennial adults = survival + seedling maturation
 N.a[t+1] = s.a * (1-g.a) * N.a[t] + g.a * h.a * f.a * N.a[t]  
 annual seeds = seed bank survival + seed production  
   
-L[t+1] = b * c.a * g.a * h.a * f.a * N.a[t-1] + b * L[t]  
+L[t+1] = c.a * g.a * h.a * N.a[t] + (1-b) * L[t]  
 annual litter = biomass from previous fall + decomposition
 
 ### Density-dependence on fecundity
@@ -190,7 +190,7 @@ simFun = function(params, N0.a, N0.s, N0.p, L0, Ni.a, simtime){
     N.s[t+1]=s.s*(1-g.s)*N.s[t]+g.s*h.s*f.s*N.s[t]+m.p*f.p*N.p[t]
     N.p[t+1]=m.p*N.p[t]+g.s*h.s*N.s[t]
     N.a[t+1]=s.a*(1-g.a)*N.a[t]+g.a*h.a*f.a*N.a[t]
-    L[t+1]=ifelse(t > 2, b*c.a*g.a*h.a*f.a*N.a[t-1]+b*L[t], L0)
+    L[t+1]=c.a*g.a*h.a*N.a[t]+(1-b)*L[t]
     
     # correct to prevent negative numbers
     N.s[t+1]=ifelse(N.s[t+1]<1,0,N.s[t+1])

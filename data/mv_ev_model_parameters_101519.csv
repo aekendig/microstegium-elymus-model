@@ -6,7 +6,7 @@ annual germination,gamma.a,0.7,year^-1^,Warren et al. 2013
 perennial germination,gamma.s,0.66,year^-1^,Robocker et al. 1953
 litter suppression of annual germination,alpha.aL,-0.0009,g^-1^ year^-1^,Foster and Gross 1998
 litter suppression of perennial germination,alpha.sL,-0.0009,g^-1^ year^-1^,Foster and Gross 1998
-litter decomposition rate,b,0.56,year^-1^,Kourtev et al. 2002
+litter decomposition rate,b,0.44,year^-1^,Kourtev et al. 2002
 annual summer survival,h.a,0.95,year^-1^,Warren et al. 2013
 perennial seedlingsummer survival,h.s,0.4,year^-1^,Mottl et al. 2006
 perennial adult summer survival,h.p,0.83,year^-1^,Mottl et al. 2006
