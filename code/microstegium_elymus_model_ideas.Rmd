@@ -1,0 +1,124 @@
+---
+title: "microstegium_elymus_model_ideas"
+author: "Amy Kendig"
+date: "11/14/2019"
+output: pdf_document
+---
+
+```{r options, include = F}
+library(knitr)
+# wrap text
+opts_chunk$set(tidy.opts=list(width.cutoff = 70), tidy = T)
+```
+
+## Summary
+Simulation of *Microstegium vimineum* and *Elymus virgincus* over time. *M. vimineum* is an invasive annual grass and *E. virginicus* is a native perennial grass. *E. virginicus* grows by itself for 100 years, and then *M. vimineum* is introduced. Disease effects arise 100 years later. Population dynamics are similar in the absence of disease and when both species are susceptible to disese. In both cases, *M. vimineum* reduces the size of the *E. virginicus* population. *M. vimineum* is able to recover population losses due to disease. *E. virginicus* seedlings are impacted more than adults. When only *M. vimineum* is susceptible to disease, its population crashes.
+
+```{r set-up, message = F, warning = F, include = F}
+# clear all existing data
+rm(list=ls())
+
+# open libraries
+library(data.table)
+library(plotly)
+library(cowplot)
+library(popbio)
+library(tidyverse)
+
+# plotting parameters
+axisText=10
+axisTitle=12
+legendText=10
+legendTitle=0
+
+# import data
+params <- read_csv("../data/mv_ev_model_parameters_102119.csv", col_types = cols())
+aparams <- read_csv("../data/mv_ev_model_alt_parameters_101519.csv", col_types = cols())
+```
+
+## Parameters
+
+* subscripts follow "."
+* p = perennial adult (at least 1 year old)
+* s = perennial seedling (germinated that spring)
+* a = annual
+* L = annual litter
+
+```{r parameters, tidy = F, include = F}
+# derive related parameters
+dparams <- tibble(
+  parameter = c("annual-adult competition", 
+                "seedling-adult competition", 
+                "adult-annual competition", 
+                "adult-seedling competition", 
+                "adult-adult competition", 
+                "seedling seed production"),
+  symbol = c("alpha.pa", 
+             "alpha.ps", 
+             "alpha.ap", 
+             "alpha.sp", 
+             "alpha.pp", 
+             "lambda.s"),
+  value = c(filter(params, symbol == "alpha.sa")$value/10, 
+            filter(params, symbol == "alpha.sa")$value/10, 
+            filter(params, symbol == "alpha.as")$value*10, 
+            filter(params, symbol == "alpha.as")$value*10, 
+            filter(params, symbol == "alpha.as")$value*10,
+            filter(params, symbol == "lambda.p")$value/10)
+) %>%
+  mutate(units = c(rep("year^-1^", 5), "seeds year^-1^"),
+         reference = "derived")
+
+# merge with main parameters
+params2 <- full_join(params, 
+                     dparams, 
+                     by = c("parameter", "symbol", "value", "units", "reference"))
+
+# simulation time
+years = 500
+```
+
+```{r parameters-table, echo = F, results = 'asis'}
+kable(params2, caption = "Model parameter values")
+kable(aparams, caption = "Alternative model parameter values")
+```
+
+## Model
+
+#### Population equations:
+Assume counts are being conducted in the fall  
+  
+N.s[t+1] = s.s * (1-g.s) * N.s[t] + g.s * h.s * f.s * N.s[t] + m.p * f.p * N.p[t]  
+perennial seeds = seed bank survival + seedling seed production + adult seed production  
+*seedling survival seems to be density-dependent (intraspecific facilitation, interspecific competition)*  
+  
+N.p[t+1] = m.p * N.p[t] + g.s * h. s * N.s[t]  
+perennial adults = survival + seedling maturation  
+  
+N.a[t+1] = s.a * (1-g.a) * N.a[t] + g.a * h.a * f.a * N.a[t]  
+annual seeds = seed bank survival + seed production  
+*seed survival or germination seems to depend on infection*  
+  
+L[t+1] = c.a * g.a * h.a * N.a[t] + L[t] * e^-b^  
+annual litter = biomass from previous fall + decomposition  
+*c.a is probably a function of density*  
+
+### Density-dependence on fecundity
+f.s = lam.s / (1 + alpha.ss * g.s * h.s * N.s[t] + alpha.sp * m.p * N.p[t] + alpha.sa * g.a * h.a * N.a[t])  
+perennial seedling fecundity = fecundity in the absence of competition / (perennial seedling competition + perennial adult competition + annual competition)
+
+f.p = lam.p / (1 + alpha.ps * g.s * h.s * N.s[t] + alpha.pp * m.p * N.p[t] + alpha.pa * g.a * h.a * N.a[t])  
+perennial adult fecundity = fecundity in the absence of competition / (perennial seedling competition + perennial adult competition + annual competition)
+
+f.a = lam.a / (1 + alpha.as * g.s * h.s * N.s[t] + alpha.ap * m.p * N.p[t] + alpha.aa * g.a * h.a * N.a[t])  
+annual fecundity = fecundity in the absence of competition / (perennial seedling competition + perennial adult competition + annual competition)  
+*we don't currently have good estimates for competition coefficients*  
+*density-dependence of fecundity changes with infection*  
+
+#### Litter suppression
+g.s = gamma.s + (alpha.sL * L[t])  
+perennial seed germination = germination in the absence of litter + reduction due to litter (alpha.sL < 0, g.s constrained to >= 0)
+
+g.a = gamma.a + (alpha.aL * L[t])  
+annual seed germination = germination in the absence of litter + reduction due to litter (alpha.aL < 0, g.a constrained to >= 0)  
+*litter production is correlated with more cleistogamous seeds in the first year*  

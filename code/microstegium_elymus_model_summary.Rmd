@@ -1,7 +1,7 @@
 ---
-title: "microstegium-elymus-model-summary"
+title: "microstegium_elymus_model_summary"
 author: "Amy Kendig"
-date: "10/17/2019"
+date: "11/14/2019"
 output: pdf_document
 ---
 
@@ -34,7 +34,7 @@ legendText=10
 legendTitle=0
 
 # import data
-params <- read_csv("../data/mv_ev_model_parameters_101519.csv", col_types = cols())
+params <- read_csv("../data/mv_ev_model_parameters_102119.csv", col_types = cols())
 aparams <- read_csv("../data/mv_ev_model_alt_parameters_101519.csv", col_types = cols())
 ```
 
@@ -101,8 +101,8 @@ perennial adults = survival + seedling maturation
 N.a[t+1] = s.a * (1-g.a) * N.a[t] + g.a * h.a * f.a * N.a[t]  
 annual seeds = seed bank survival + seed production  
   
-L[t+1] = c.a * g.a * h.a * N.a[t] + (1-b) * L[t]  
-annual litter = biomass from previous fall + decomposition
+L[t+1] = c.a * g.a * h.a * N.a[t] + L[t] * e^-b^  
+annual litter = biomass from previous fall + decomposition  
 
 ### Density-dependence on fecundity
 f.s = lam.s / (1 + alpha.ss * g.s * h.s * N.s[t] + alpha.sp * m.p * N.p[t] + alpha.sa * g.a * h.a * N.a[t])  
@@ -190,7 +190,7 @@ simFun = function(params, N0.a, N0.s, N0.p, L0, Ni.a, simtime){
     N.s[t+1]=s.s*(1-g.s)*N.s[t]+g.s*h.s*f.s*N.s[t]+m.p*f.p*N.p[t]
     N.p[t+1]=m.p*N.p[t]+g.s*h.s*N.s[t]
     N.a[t+1]=s.a*(1-g.a)*N.a[t]+g.a*h.a*f.a*N.a[t]
-    L[t+1]=c.a*g.a*h.a*N.a[t]+(1-b)*L[t]
+    L[t+1]=c.a*g.a*h.a*N.a[t]+L[t]*exp(-b)
     
     # correct to prevent negative numbers
     N.s[t+1]=ifelse(N.s[t+1]<1,0,N.s[t+1])
@@ -226,7 +226,7 @@ simFun(params = params2,
         legend.title = element_text(size = legendTitle))
 ```
 
-### Remove disease
+### Remove disease from both species
 ```{r rem-dis, tidy = F}
 simFun(params = params2 %>% mutate(value = case_when(symbol %in% c("tol.a", "tol.p") ~ 1,
                                                      TRUE ~ value)),
