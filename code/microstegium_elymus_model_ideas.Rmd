@@ -102,6 +102,7 @@ annual seeds = seed bank survival + seed production
 L[t+1] = c.a * g.a * h.a * N.a[t] + L[t] * e^-b^  
 annual litter = biomass from previous fall + decomposition  
 *c.a is probably a function of density*  
+*different rates of litter decay based on environmental conditions*  
 
 ### Density-dependence on fecundity
 f.s = lam.s / (1 + alpha.ss * g.s * h.s * N.s[t] + alpha.sp * m.p * N.p[t] + alpha.sa * g.a * h.a * N.a[t])  
@@ -121,4 +122,15 @@ perennial seed germination = germination in the absence of litter + reduction du
 
 g.a = gamma.a + (alpha.aL * L[t])  
 annual seed germination = germination in the absence of litter + reduction due to litter (alpha.aL < 0, g.a constrained to >= 0)  
-*litter production is correlated with more cleistogamous seeds in the first year*  
+*litter production is correlated with more cleistogamous seeds in the first year* 
+
+#### Disease
+*transmission through the litter*
+
+#### Perspectives on coexistence
+*effect of a species on the environment and response of the species to the environment*
+*relationship between plants and litter is similar to plant-soil feedbacks*
+
+#### Ideas
+*one species model - would expect fluctuations*
+*internal check - make the same diagram as Nick*

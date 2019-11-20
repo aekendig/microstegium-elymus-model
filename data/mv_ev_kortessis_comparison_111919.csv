@@ -1,0 +1,28 @@
+﻿parameter,symbol,value,units
+perennial adult survival,m.p,0.8,year^-1^
+annual seed survival,s.a,0.8,year^-1^
+perennial seed survival,s.s,0.5,year^-1^
+annual germination,gamma.a,1,year^-1^
+perennial germination,gamma.s,0.5,year^-1^
+litter suppression of annual germination,alpha.aL,1.5,g^-1^ year^-1^
+litter suppression of perennial germination,alpha.sL,0.25,g^-1^ year^-1^
+litter decomposition rate,b,0.2,year^-1^
+annual summer survival,h.a,1,year^-1^
+perennial seedlingsummer survival,h.s,1,year^-1^
+perennial adult summer survival,h.p,1,year^-1^
+annual seeds per biomass,v.a,1,year^-1^
+perennial seeds per biomass,v.p,1,year^-1^
+annual seed production,lambda.a,13.5,seeds year^-1^
+perennial seed production,lambda.p,3,seeds year^-1^
+seedling seed production,lambda.s,0.3,seeds year^-1^
+annual-annual competition,alpha.aa,0.25,year^-1^
+seedling-annual competition,alpha.as,0,year^-1^
+perennial-annual competition,alpha.ap,0.25,year^-1^
+seedling-seedling competition,alpha.ss,0,year^-1^
+annual-seedling competition,alpha.sa,2.5,year^-1^
+perennial-seedling competition,alpha.sp,2.5,year^-1^
+perennial-perennial competition,alpha.pp,0.25,year^-1^
+annual-perennial competition,alpha.pa,0.25,year^-1^
+seedling-perennial competition,alpha.ps,0,year^-1^
+annual biomass per seed,c.a,0.005,g seeds^-1^ year^-1^
+overwinter litter dcomposition,w.a,0.5,year^-1^
