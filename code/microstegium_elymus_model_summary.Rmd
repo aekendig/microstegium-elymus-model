@@ -1,7 +1,7 @@
 ---
 title: "microstegium_elymus_model_summary"
 author: "Amy Kendig"
-date: "11/14/2019"
+date: "12/5/2019"
 output: pdf_document
 ---
 
@@ -34,18 +34,18 @@ legendText=10
 legendTitle=0
 
 # import data
-params <- read_csv("../data/mv_ev_model_parameters_102119.csv", col_types = cols())
-aparams <- read_csv("../data/mv_ev_model_alt_parameters_101519.csv", col_types = cols())
+params <- read_csv("../data/mv_ev_model_parameters_120319.csv", col_types = cols())
 ```
 
 ## Parameters
 
 #### Formatting:
 * subscripts follow "."
-* p = perennial adult (at least 1 year old)
-* s = perennial seedling (germinated that spring)
-* a = annual
+* A = annual plant
 * L = annual litter
+* P = perennial adult (at least 1 year old)
+* S = perennial seedling (germinated that spring)  
+* Composite parameters are capitalized  
 
 #### Edit:
 ```{r parameters, tidy = F}
@@ -90,19 +90,28 @@ kable(aparams, caption = "Alternative model parameter values")
 ## Model
 
 #### Population equations:
-Assume counts are being conducted in the fall  
+Assume counts are being conducted in the spring  
   
-N.s[t+1] = s.s * (1-g.s) * N.s[t] + g.s * h.s * f.s * N.s[t] + m.p * f.p * N.p[t]  
+N.A[t+1] = s.A * (1-G.A) * N.A[t] + G.A * V.A * y.A * N.A[t]  
+annual seeds = seed bank survival + seed production  
+
+L[t+1] = a * G.A * V.A * N.a[t] + (1-b) * L[t]
+annual litter = biomass from previous fall + decomposition  
+  
+N.S[t+1] = s.S * (1-G.S) * N.s[t] + G.S * F.1 * N.S[t] + F.P * N.P[t]  
 perennial seeds = seed bank survival + seedling seed production + adult seed production  
   
-N.p[t+1] = m.p * N.p[t] + g.s * h. s * N.s[t]  
+N.P[t+1] = s.P * N.P[t] + s.1 * G.S * N.S[t]  
 perennial adults = survival + seedling maturation  
-  
-N.a[t+1] = s.a * (1-g.a) * N.a[t] + g.a * h.a * f.a * N.a[t]  
-annual seeds = seed bank survival + seed production  
-  
-L[t+1] = c.a * g.a * h.a * N.a[t] + L[t] * e^-b^  
-annual litter = biomass from previous fall + decomposition  
+
+
+#### Litter suppression of germination
+G.A = g.A / (1 + beta * L[t])  
+annual seed germination = germination in the absence of litter / reduction due to litter 
+
+G.S = g.S / (1 + beta * L[t])  
+perennial seed germination = germination in the absence of litter / reduction due to litter 
+
 
 ### Density-dependence on fecundity
 f.s = lam.s / (1 + alpha.ss * g.s * h.s * N.s[t] + alpha.sp * m.p * N.p[t] + alpha.sa * g.a * h.a * N.a[t])  
@@ -114,12 +123,7 @@ perennial adult fecundity = fecundity in the absence of competition / (perennial
 f.a = lam.a / (1 + alpha.as * g.s * h.s * N.s[t] + alpha.ap * m.p * N.p[t] + alpha.aa * g.a * h.a * N.a[t])  
 annual fecundity = fecundity in the absence of competition / (perennial seedling competition + perennial adult competition + annual competition)
 
-#### Litter suppression
-g.s = gamma.s + (alpha.sL * L[t])  
-perennial seed germination = germination in the absence of litter + reduction due to litter (alpha.sL < 0, g.s constrained to >= 0)
 
-g.a = gamma.a + (alpha.aL * L[t])  
-annual seed germination = germination in the absence of litter + reduction due to litter (alpha.aL < 0, g.a constrained to >= 0)
 
 #### Function
 ```{r model}

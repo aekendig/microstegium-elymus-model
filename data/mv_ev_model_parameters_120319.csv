@@ -1,0 +1,26 @@
+﻿parameter,symbol,value,units,reference
+annual germination without litter,g.A,0.8,year^-1^,Redwood et al. 2018
+litter suppression of germination,beta,0.0065,g^-1^ year^-1^,Foster and Gross 1998
+annual seed survival,s.A,0.13,year^-1^,Redwood et al. 2018
+annual biomass without competition,v.A,17.4,g year^-1^,Wilson et al. 2015
+intraspecific effect of competition on annual,alpha.AA,0.002,year^-1^,Leicht et al. 2005
+interspecific seedling effect of competition on annual,alpha.AS,0.0007,year^-1^,Leicht et al. 2005
+interspecific adult effect of competition on annual,alpha.AP,0.007,year^-1^,10x alpha.AS
+annual biomass-seed conversion,y.A,86,seeds g^-1^ year^-1^,"Wilson et al. 2015, Redwood et al. 2018"
+annual litter-biomass conversion,a,0.95,year^-1^,DeMeester and Richter 2010
+litter decomposition rate,b,0.67,year^-1^,DeMeester and Richter 2010
+perennial germination without litter,g.S,0.8,year^-1^,Garrison and Stier 2010
+perennial seed survival,s.S,1,year^-1^,Garrison and Stier 2010
+adult perennial seed production without competition,f.P,22,seeds year^-1^,"Stevens 1957, Garrison and Stier 2010"
+seedling perennial seed production without competition,f.1,2,seeds year^-1^,1/10 of f.P
+intraspecific seedling effect of competition on perennial seedling,alpha.SS,0.006,year^-1^,Leicht et al. 2005
+interspecific effect of competition on perennial seedling,alpha.SA,0.06,year^-1^,Leicht et al. 2005
+intraspecific adult effect of competition on perennial seedling,alpha.SP,0.06,year^-1^,10x alpha.SS
+intraspecific adult effect of competition on perennial adult,alpha.PP,0.006,year^-1^,equal to alpha.SS
+intraspecific seedling effect of competition on perennial adult,alpha.PS,0.0006,year^-1^,1/10 of alpha.SS
+interspecific effect of competition on perennial adult,alpha.PA,0.006,year^-1^,1/10 of alpha.SA
+perennial seedling survival,s.1,0.4,year^-1^,Mottl et al. 2006
+perennial adult survival,s.P,0.89,year^-1^,Mottl et al. 2006
+competitive effect of annual,alpha.A,0.02,year^-1^,average of alpha.iA
+competitive effect of perennial seedling,alpha.S,0.002,year^-1^,average of alpha.iS
+competitive effect of perennial adult,alpha.P,0.02,year^-1^,average of alpha.iP
