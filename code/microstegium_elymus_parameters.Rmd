@@ -237,3 +237,16 @@ s.1 <- 0.4
 (s.P <- mean(c(1, 0.83, 0.83)))
 ```
 
+# disease parameters
+Stricker et al. (2016) applied fungicide or water to experimental plots at 4 *M. vimineum*-invaded sites (10 replicates per site). Half of the plots had native species added to them as seeds. They applied fungicide very month. They collected *M. vimineum* biomass and seed head numbers and native plant biomass over two years. Fungicide increased *M. vimineum* biomass by 39%. It did not directly affect native plant biomass, but there was an interaction between *M. vimineum* biomass and year, with a negative relationship between *M. vimineum* biomass and native plant biomass in the second year. In a greenhouse experiment without the pathogen, fungicide reduced *M. vimineum* biomass, but the amount was not reported.
+
+Flory et al. (2011) performed a similar experiment with three sites and no native seed addition. They applied fungicide every 10 - 14 days. Fungicide increased *M. vimineum* biomass by 33%. In a greenhouse experiment without the pathogen, fungicide reduced *M. vimineum* biomass by 52%.
+
+```{r dis}
+# fungicide = (1 - 0.52) * healthy  = 0.48 * healthy
+
+# fungicide = (1 + 0.36) * diseased
+
+# diseased = 0.48 * healthy / 1.36
+(dis <- 0.48/1.36)
+```

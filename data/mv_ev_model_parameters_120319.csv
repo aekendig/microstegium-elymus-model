@@ -24,3 +24,4 @@ perennial adult survival,s.P,0.89,year^-1^,Mottl et al. 2006
 competitive effect of annual,alpha.A,0.02,year^-1^,average of alpha.iA
 competitive effect of perennial seedling,alpha.S,0.002,year^-1^,average of alpha.iS
 competitive effect of perennial adult,alpha.P,0.02,year^-1^,average of alpha.iP
+reduction in biomass due to disease,dis,0.35,year^-1^,"Flory et al. 2011, Stricker et al. 2016"
