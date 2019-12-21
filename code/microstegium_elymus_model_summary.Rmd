@@ -2,7 +2,8 @@
 title: "microstegium_elymus_model_summary"
 author: "Amy Kendig"
 date: "12/5/2019"
-output: pdf_document
+output: 
+  bookdown::pdf_document2: default
 ---
 
 ```{r options, include = F}
@@ -11,11 +12,11 @@ library(knitr)
 opts_chunk$set(tidy.opts=list(width.cutoff = 70), tidy = T)
 ```
 
-## Summary
+# Summary
 Simulation of *Microstegium vimineum* and *Elymus virgincus* over time. *M. vimineum* is an invasive annual grass and *E. virginicus* is a native perennial grass. *E. virginicus* grows by itself for 100 years, and then *M. vimineum* is introduced. Disease effects arise 100 years later. Population dynamics are similar in the absence of disease and when both species are susceptible to disese. In both cases, *M. vimineum* reduces the size of the *E. virginicus* population. *M. vimineum* is able to recover population losses due to disease. *E. virginicus* seedlings are impacted more than adults. When only *M. vimineum* is susceptible to disease, its population crashes.
 
 
-## Set-up
+# Set-up
 ```{r set-up, message = F, warning = F}
 # clear all existing data
 rm(list=ls())
@@ -32,14 +33,15 @@ axisText=10
 axisTitle=12
 legendText=10
 legendTitle=0
+colPal = c("#0072B2", "#56B4E9", "#009E73", "#E69F00")
 
 # import data
 params <- read_csv("../data/mv_ev_model_parameters_120319.csv", col_types = cols())
 ```
 
-## Parameters
+# Parameters
 
-#### Formatting:
+## Formatting:
 * subscripts follow "."
 * A = annual plant
 * L = annual litter
@@ -47,7 +49,7 @@ params <- read_csv("../data/mv_ev_model_parameters_120319.csv", col_types = cols
 * S = perennial seedling (germinated that spring)  
 * Composite parameters are capitalized  
 
-#### Settings:
+## Settings:
 ```{r parameters, tidy = F}
 # simulation time
 simtime = 500
@@ -66,22 +68,22 @@ L0 = 0 # initial annual litter amount
 Ni.A = 1 # introduction of annual 
 ```
 
-#### Literature:
+## Literature:
 ```{r parameters-table, echo = F, results = 'asis'}
 paramSub <- filter(params, !(symbol %in% c("alpha.AA", "alpha.AS", "alpha.AP", "alpha.SS", "alpha.SA", "alpha.SP", "alpha.PP", "alpha.PS", "alpha.PA")))
 kable(paramSub, caption = "Model parameter values", format = "markdown", padding = 0)
 ```
 
 
-## Model
+# Model
 
-#### Population equations:
+## Population equations:
 Assume counts are being conducted in the spring  
   
 N.A[t+1] = s.A * (1-G.A) * N.A[t] + G.A * V.A * y.A * N.A[t]  
 annual seeds = seed bank survival + seed production  
 
-L[t+1] = a * G.A * V.A * N.A[t] + (1-b) * L[t]  
+L[t+1] = a * G.A * V.A * N.A[t] + (1-b) * L[t]    
 annual litter = biomass from previous fall + decomposition  
   
 N.S[t+1] = s.S * (1-G.S) * N.S[t] + G.S * F.1 * N.S[t] + F.P * N.P[t]  
@@ -90,25 +92,25 @@ perennial seeds = seed bank survival + seedling seed production + adult seed pro
 N.P[t+1] = s.P * N.P[t] + s.1 * G.S * N.S[t]  
 perennial adults = survival + seedling maturation  
 
-#### Litter suppression of germination
+## Litter suppression of germination
 G.A = g.A / (1 + beta * L[t])  
 annual seed germination = germination in the absence of litter / reduction due to litter 
 
 G.S = g.S / (1 + beta * L[t])  
 perennial seed germination = germination in the absence of litter / reduction due to litter 
 
-### Density-dependence on growth and fecundity
-V.A = v.A / (1 + alpha.A * G.A * N.A[t] + alpha.P * N.P[t] + alpha.S * G.S * N.S[t])  
+## Density-dependence on growth and fecundity
+V.A = v.A / (1 + alpha.A * G.A * N.A[t] + alpha.P * N.P[t] + alpha.S * G.S * N.S[t])    
 annual growth = growth in the absence of competition / (competition from annuals + competition from perennial adults + competition from perennial seedlings)
 
-F.1 = f.1 / (1 + alpha.A * G.A * N.A[t] + alpha.P * N.P[t] + alpha.S * G.S * N.S[t])  
+F.1 = f.1 / (1 + alpha.A * G.A * N.A[t] + alpha.P * N.P[t] + alpha.S * G.S * N.S[t])    
 perennial seedling seed production = seed production in the absence of competition / (competition from annuals + competition from perennial adults + competition from perennial seedlings)
 
-F.P = f.P / (1 + alpha.A * G.A * N.A[t] + alpha.P * N.P[t] + alpha.S * G.S * N.S[t])  
+F.P = f.P / (1 + alpha.A * G.A * N.A[t] + alpha.P * N.P[t] + alpha.S * G.S * N.S[t])    
 perennial adult seed production = seed production in the absence of competition / (competition from annuals + competition from perennial adults + competition from perennial seedlings)
 
 
-#### Function
+# Function
 ```{r model}
 simFun = function(params, N0.A, N0.S, N0.P, L0, Ni.A, simtime, invtime, distime){
   
@@ -181,40 +183,58 @@ simFun = function(params, N0.A, N0.S, N0.P, L0, Ni.A, simtime, invtime, distime)
 }
 ```
 
-## Simulations
+# Simulations
 
-#### No disease
-```{r no dis, tidy = F}
+## No disease
+```{r no-dis, tidy = F}
 nodisSim <- simFun(params, N0.A, N0.S, N0.P, L0, Ni.A, simtime, invtime, distime = simtime + 10)
 nodisSim %>%
   ggplot(aes(x = time, y = log(N+1), color = species)) +
-  geom_line() + 
+  geom_line(size = 1.5) + 
   theme(axis.text = element_text(size = axisText),
         axis.title = element_text(size = axisTitle),
         legend.text = element_text(size = legendText),
-        legend.title = element_text(size = legendTitle))
+        legend.title = element_text(size = legendTitle)) +
+  scale_color_manual(values = colPal)
 ```
+
+### Elymus on non-transformed scale
 ```{r elymus-zoom, tidy = F}
 nodisSim %>%
   filter(species %in% c("Elymus adult", "Elymus seedling")) %>%
   ggplot(aes(x = time, y = N, color = species)) +
-  geom_line() + 
+  geom_line(size = 1.5) + 
   theme(axis.text = element_text(size = axisText),
         axis.title = element_text(size = axisTitle),
         legend.text = element_text(size = legendText),
-        legend.title = element_text(size = legendTitle))
+        legend.title = element_text(size = legendTitle)) +
+  scale_color_manual(values = colPal)
 ```
 
-#### Add disease
+## Add disease
 ```{r def-parms, tidy = F}
 disSim <- simFun(params, N0.A, N0.S, N0.P, L0, Ni.A, simtime, invtime, distime)
 disSim %>%
   ggplot(aes(x = time, y = log(N+1), color = species)) +
-  geom_line() + 
+  geom_line(size = 1.5) + 
   theme(axis.text = element_text(size = axisText),
         axis.title = element_text(size = axisTitle),
         legend.text = element_text(size = legendText),
-        legend.title = element_text(size = legendTitle))
+        legend.title = element_text(size = legendTitle)) +
+  scale_color_manual(values = colPal)
+```
+
+### Microstegium on non-transformed scale
+```{r micro-zoom, tidy = F}
+disSim %>%
+  filter(species %in% c("Microstegium", "Microstegium litter")) %>%
+  ggplot(aes(x = time, y = N, color = species)) +
+  geom_line(size = 1.5) + 
+  theme(axis.text = element_text(size = axisText),
+        axis.title = element_text(size = axisTitle),
+        legend.text = element_text(size = legendText),
+        legend.title = element_text(size = legendTitle)) +
+  scale_color_manual(values = colPal[3:4])
 ```
 
 ### Time to extinction?
