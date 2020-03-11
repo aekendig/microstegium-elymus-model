@@ -1,0 +1,162 @@
+---
+title: "microstegium_elymus_competition_summary"
+author: "Amy Kendig"
+date: "2/17/2020"
+output: 
+  bookdown::pdf_document2: default
+---
+
+```{r options, include = F}
+library(knitr)
+# wrap text
+opts_chunk$set(tidy.opts=list(width.cutoff = 70), tidy = T)
+```
+
+# Set-up
+```{r set-up, message = F, warning = F}
+# clear 
+rm(list=ls())
+
+# load libraries
+library(tidyverse)
+
+# import data
+parms <- read_csv("../data/mv_ev_model_parameters_experiment_021720.csv")
+parms_dis <- read_csv("../data/mv_ev_model_disease_parameters_experiment_021720.csv")
+```
+
+# Interference competition
+
+We assume that the effect of interference competition comes from the annual species through production of litter and both species respond to it.  
+- Effect: per capita biomass production    
+- Response: mu(1-s)/(1 - s(1-g)) [mu is the germination sensitivity from G(t) = g/(1 + mu x L(t))]
+
+```{r interference-effect}
+
+# extract parameters
+v.A <- parms %>% filter(symbol == "v.A") %>% select(value)
+v.A_dis <- parms_dis %>% filter(symbol == "v.A") %>% select(value)
+
+# interference competition effect from annual
+(int_eff.A <- v.A)
+(int_eff_dis.A <- v.A_dis)
+```
+
+```{r interference-response}
+
+# extract parameters
+beta.A <- parms %>% filter(symbol == "beta.A") %>% select(value)
+s.A <- parms %>% filter(symbol == "s.A") %>% select(value)
+g.A <- parms %>% filter(symbol == "g.A") %>% select(value)
+beta.A_dis <- parms_dis %>% filter(symbol == "beta.A") %>% select(value)
+s.A_dis <- parms_dis %>% filter(symbol == "s.A") %>% select(value)
+g.A_dis <- parms_dis %>% filter(symbol == "g.A") %>% select(value)
+
+beta.S <- parms %>% filter(symbol == "beta.S") %>% select(value)
+s.S <- parms %>% filter(symbol == "s.S") %>% select(value)
+g.S <- parms %>% filter(symbol == "g.S") %>% select(value)
+beta.S_dis <- parms_dis %>% filter(symbol == "beta.S") %>% select(value)
+s.S_dis <- parms_dis %>% filter(symbol == "s.S") %>% select(value)
+g.S_dis <- parms_dis %>% filter(symbol == "g.S") %>% select(value)
+
+# interference competition response of annual
+(int_res.A <- beta.A*(1-s.A)/(1-s.A*(1-g.A)))
+(int_res_dis.A <- beta.A_dis*(1-s.A_dis)/(1-s.A_dis*(1-g.A_dis)))
+
+# interference competition response of perennial
+(int_res.P <- beta.S*(1-s.S)/(1-s.S*(1-g.S)))
+(int_res_dis.P <- beta.S_dis*(1-s.S_dis)/(1-s.S_dis*(1-g.S_dis)))
+```
+
+# Resource competition
+
+Resources are not explicit in the model but changes in density result in changes in biomass production or seed production, which we assume reflects resource competition, among other processes.  
+- Effect: g x v x y x alpha (annual) and g x y x [s_{sp} x s_{ps}/(1-s_p) + f] x alpha (perennial) [alpha is species-specific - I'm using the means, some are 0, so the geometric mean comes out to 0, f = y1/y]   
+- Response: 1 - s(1 - g) times the reduction in size/reproduction with changes in plant density
+
+```{r resource-effect}
+
+# extract parameters
+y.A <- parms %>% filter(symbol == "y.A") %>% select(value)
+alpha.AA <- parms %>% filter(symbol == "alpha.AA") %>% select(value) %>% as.numeric()
+alpha.SA <- parms %>% filter(symbol == "alpha.SA") %>% select(value) %>% as.numeric()
+alpha.PA <- parms %>% filter(symbol == "alpha.PA") %>% select(value) %>% as.numeric()
+y.A_dis <- parms_dis %>% filter(symbol == "y.A") %>% select(value)
+alpha.AA_dis <- parms_dis %>% filter(symbol == "alpha.AA") %>% select(value) %>% as.numeric()
+alpha.SA_dis <- parms_dis %>% filter(symbol == "alpha.SA") %>% select(value) %>% as.numeric()
+alpha.PA_dis <- parms_dis %>% filter(symbol == "alpha.PA") %>% select(value) %>% as.numeric()
+
+f.1 <- parms %>% filter(symbol == "f.1") %>% select(value)
+f.P <- parms %>% filter(symbol == "f.P") %>% select(value)
+s.1 <- parms %>% filter(symbol == "s.1") %>% select(value)
+s.P <- parms %>% filter(symbol == "s.P") %>% select(value)
+alpha.SS <- parms %>% filter(symbol == "alpha.SS") %>% select(value) %>% as.numeric()
+alpha.AS <- parms %>% filter(symbol == "alpha.AS") %>% select(value) %>% as.numeric()
+alpha.PS <- parms %>% filter(symbol == "alpha.PS") %>% select(value) %>% as.numeric()
+alpha.PP <- parms %>% filter(symbol == "alpha.PP") %>% select(value) %>% as.numeric()
+alpha.AP <- parms %>% filter(symbol == "alpha.AP") %>% select(value) %>% as.numeric()
+alpha.SP <- parms %>% filter(symbol == "alpha.SP") %>% select(value) %>% as.numeric()
+f.1_dis <- parms_dis %>% filter(symbol == "f.1") %>% select(value)
+f.P_dis <- parms_dis %>% filter(symbol == "f.P") %>% select(value)
+s.1_dis <- parms_dis %>% filter(symbol == "s.1") %>% select(value)
+s.P_dis <- parms_dis %>% filter(symbol == "s.P") %>% select(value)
+alpha.SS_dis <- parms_dis %>% filter(symbol == "alpha.SS") %>% select(value) %>% as.numeric()
+alpha.AS_dis <- parms_dis %>% filter(symbol == "alpha.AS") %>% select(value) %>% as.numeric()
+alpha.PS_dis <- parms_dis %>% filter(symbol == "alpha.PS") %>% select(value) %>% as.numeric()
+alpha.PP_dis <- parms_dis %>% filter(symbol == "alpha.PP") %>% select(value) %>% as.numeric()
+alpha.AP_dis <- parms_dis %>% filter(symbol == "alpha.AP") %>% select(value) %>% as.numeric()
+alpha.SP_dis <- parms_dis %>% filter(symbol == "alpha.SP") %>% select(value) %>% as.numeric()
+
+# resource competition effect of annual
+(res_eff.A <- g.A * v.A * y.A * mean(c(alpha.AA, alpha.SA, alpha.PA)))
+(res_eff_dis.A <- g.A_dis * v.A_dis * y.A_dis * mean(c(alpha.AA_dis, alpha.SA_dis, alpha.PA_dis)))
+
+# resource competition effect of perennial
+(res_eff.P <- g.S * f.P * (s.1 * s.S / (1 - s.P) + f.1 / f.P) * mean(c(alpha.SS, alpha.AS, alpha.PS, alpha.PP, alpha.AP, alpha.SP)))
+(res_eff_dis.P <- g.S_dis * f.P_dis * (s.1_dis * s.S_dis / (1 - (s.P_dis - 0.01)) + f.1_dis / f.P_dis) * mean(c(alpha.SS_dis, alpha.AS_dis, alpha.PS_dis, alpha.PP_dis, alpha.AP_dis, alpha.SP_dis)))
+```
+
+```{r resource-response}
+
+# resource competition response of annual
+(res_res.A <- 1 - s.A * (1 - g.A) * mean(c(alpha.AA, alpha.AS, alpha.AP)))
+(res_res_dis.A <- 1 - s.A_dis * (1 - g.A_dis) * mean(c(alpha.AA_dis, alpha.AS_dis, alpha.AP_dis)))
+
+# resource competition response of perennial
+(res_res.P <- 1 - s.S * (1 - g.S) * mean(c(alpha.SS, alpha.SA, alpha.SP, alpha.PP, alpha.PA, alpha.PS)))
+(res_res_dis.P <- 1 - s.S_dis * (1 - g.S_dis) * mean(c(alpha.SS_dis, alpha.SA_dis, alpha.SP_dis, alpha.PP_dis, alpha.PA, alpha.PS_dis)))
+```
+
+```{r effect-response}
+
+# resource competition annual
+res_eff.A / res_res.A
+res_eff_dis.A / res_res_dis.A
+
+# resource competition perennial
+res_eff.P / res_res.P
+res_eff_dis.P / res_res_dis.P
+
+```
+
+# Competition coefficients
+
+```{r competition-coefficients}
+
+# intraspecific competition annual
+alpha.AA
+alpha.AA_dis
+
+# interspecific competition annual
+mean(c(alpha.AS, alpha.AP))
+mean(c(alpha.AS_dis, alpha.AP_dis))
+
+# intraspecific competition perennial
+mean(c(alpha.SS, alpha.PP, alpha.SP, alpha.PS))
+mean(c(alpha.SS_dis, alpha.PP_dis, alpha.SP_dis, alpha.PS_dis))
+
+# interspecific competition perennial
+mean(c(alpha.SA, alpha.PA))
+mean(c(alpha.SA_dis, alpha.PA_dis))
+
+```

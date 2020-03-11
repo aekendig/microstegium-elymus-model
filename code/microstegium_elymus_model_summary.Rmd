@@ -1,7 +1,7 @@
 ---
 title: "microstegium_elymus_model_summary"
 author: "Amy Kendig"
-date: "12/5/2019"
+date: "02/13/2020"
 output: 
   bookdown::pdf_document2: default
 ---
@@ -36,7 +36,7 @@ legendTitle=0
 colPal = c("#0072B2", "#56B4E9", "#009E73", "#E69F00")
 
 # import data
-params <- read_csv("../data/mv_ev_model_parameters_120319.csv", col_types = cols())
+params <- read_csv("../data/mv_ev_model_parameters_021320.csv", col_types = cols())
 ```
 
 # Parameters

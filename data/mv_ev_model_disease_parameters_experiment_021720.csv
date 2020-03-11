@@ -1,0 +1,24 @@
+﻿parameter,symbol,value,units,notes
+annual germination without litter,g.A,0.57,year^-1^,
+litter suppression of annual germination,beta.A,0.0087,g^-1^ year^-1^,
+annual seed survival,s.A,0.125,year^-1^,Redwood et al. 2018
+annual biomass without competition,v.A,36.42,g year^-1^,
+intraspecific effect of competition on annual,alpha.AA,0.08,year^-1^,
+interspecific seedling effect of competition on annual,alpha.AS,0,year^-1^,
+interspecific adult effect of competition on annual,alpha.AP,0.12,year^-1^,
+annual biomass-seed conversion,y.A,11.63,seeds g^-1^ year^-1^,
+annual litter-biomass conversion,a,1,year^-1^,
+litter decomposition rate,b,0.67,year^-1^,DeMeester and Richter 2010
+perennial germination without litter,g.S,0.44,year^-1^,
+litter suppression of perennial germination,beta.S,0.024,g^-1^ year^-1^,
+perennial seed survival,s.S,0.11,year^-1^,Garrison and Stier 2010
+adult perennial seed production without competition,f.P,25.11,seeds year^-1^,
+seedling perennial seed production without competition,f.1,11.4,seeds year^-1^,
+intraspecific seedling effect of competition on perennial seedling,alpha.SS,0,year^-1^,
+interspecific effect of competition on perennial seedling,alpha.SA,0.0024,year^-1^,
+intraspecific adult effect of competition on perennial seedling,alpha.SP,0.035,year^-1^,
+intraspecific adult effect of competition on perennial adult,alpha.PP,0.00097,year^-1^,
+intraspecific seedling effect of competition on perennial adult,alpha.PS,0.012,year^-1^,
+interspecific effect of competition on perennial adult,alpha.PA,0.0012,year^-1^,
+perennial seedling survival,s.1,0.33,year^-1^,
+perennial adult survival,s.P,1,year^-1^,

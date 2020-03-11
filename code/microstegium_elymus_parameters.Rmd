@@ -205,9 +205,9 @@ s.S0 <- 0.09
 ```
 
 ## seed viability
-Garrison and Stier (2010) reported that 5% of seeds were viable after buried for six months (October to April). Again, note that empirical values for seed bank survival include both viability and longer term survival. We divide by viability to get the new survival value because these will be effectively multiplied again in the model.
+Garrison and Stier (2010) reported that 83% of seeds were viable at the beginning of the study. Again, note that empirical values for seed bank survival include both viability and longer term survival. We divide by viability to get the new survival value because these will be effectively multiplied again in the model.
 ```{r w.S}
-w.S <- 0.05
+w.S <- 0.83
 (s.S <- s.S0/w.S)
 ```
 
