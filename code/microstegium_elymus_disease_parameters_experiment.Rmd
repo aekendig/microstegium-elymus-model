@@ -1,7 +1,7 @@
 ---
 title: "microstegium_elymus_model_disease_parameters_experiment"
 author: "Amy Kendig"
-date: "2/13/2019"
+date: "7/21/2019"
 output: 
   bookdown::pdf_document2: default
 ---
@@ -19,6 +19,8 @@ rm(list=ls())
 
 # load libraries
 library(tidyverse)
+library(brms)
+library(glmmTMB)
 ```
 
 
@@ -36,48 +38,36 @@ library(tidyverse)
 *Microstegium vimineum* germination from 200 planted seeds and an estimated number of background seeds based on a neighboring subplot in plots with litter removed. Methods: field_litter_experiment_2018.docx.
 
 ```{r g.A}
-A_germ_dat <- read_csv("../../big-oaks-field-experiment-2018-2019/microstegium-bipolaris/intermediate-data/mv_germination_covariates_2018_litter_exp.csv") %>%
-  mutate(mv_germ_planted_cor_jul = ifelse(mv_germ_planted_cor_jul > 200, 200,
-                                          mv_germ_planted_cor_jul),
-         prop_germ = mv_germ_planted_cor_jul/200)
+# import model
+load("../../big-oaks-field-experiment-2018-2019/microstegium-bipolaris/output/mv_germination_litter_model_2018_litter_exp.rda")
 
-g.A_parms <- filter(A_germ_dat, litter_density == "none") %>%
-  summarise(g.A = mean_cl_boot(prop_germ)$y,
-            g.A_low = mean_cl_boot(prop_germ)$ymin,
-            g.A_hi = mean_cl_boot(prop_germ)$ymax)
+# extract fixed effects
+A_germ_est <- fixef(mv_germ_litter_mod) %>%
+  as_tibble() %>%
+  mutate(parm = c("max_germ_autoclaved", "max_germ_live", "alpha_autoclaved", "alpha_live"))
 
-g.A_parms$g.A
-# Stats: need to constrain the values to 0 to 1 (manually constrained to 0 in mv_germination_disease_analysis_2018_litter_exp.R and 1 above) and incorporate uncertainty in the background germination into the estimate.
+# select the no-litter values
+g.A_parms <- filter(A_germ_est, parm == "max_germ_live") %>%
+  mutate(Estimate = Estimate / 200,
+         Q2.5 = Q2.5 / 200,
+         Q97.5 = Q97.5 / 200)
+
+# check
+g.A_parms$Estimate
 ```
 
 ## reduced annual germination due to litter
 Same experiment as above except also using plots with litter added
 
 ```{r beta.A, out.width = "50%", tidy = F}
+# select the no-litter values
+beta.A_parms <- filter(A_germ_est, parm == "alpha_live")
 
-# subset data
-A_litter_dat <- filter(A_germ_dat, litter %in% c("live", "none"))
-
-# fit non-linear curve
-beta.A_mod <- nls(prop_germ ~ germ0 / (1 + beta * litter_weight.g), 
-                start = list(germ0 = g.A_parms$g.A, beta = 1), 
-                data = A_litter_dat)
-summary(beta.A_mod)
-
-# look at fit
-litter_germ_df <- tibble(litter_weight.g = seq(0, 200, length.out = 100))
-litter_germ_df$prop_germ <- predict(beta.A_mod, newdata = litter_germ_df)
-ggplot(A_litter_dat, aes(x = litter_weight.g, y = prop_germ)) +
-  geom_point(size = 2) +
-  geom_line(data = litter_germ_df)
-
-# save baseline germination and beta
-(g.A <- coef(beta.A_mod)[1])
-(beta.A <- coef(beta.A_mod)[2])
+beta.A_parms$Estimate
 ```
 
 ## survival of dormant annual seeds
-We used the survival data collected by Redwood et al. (2018) in November 2011 (buried for one year). Some of these seeds would have germinated had they been exposed to a germination test earlier in the year. 
+We used the survival data collected by Redwood et al. (2018) in November 2011 (buried for one year). Some of these seeds would have germinated had they been exposed to a germination test earlier in the year. Scroll down to seed viability for final survival value.
 
 ```{r s.A}
 # load extracted figure data
@@ -89,118 +79,60 @@ rw18_2a <- read_csv("../data/Redwood_2018_Fig2A.csv")
   round(digits = 1) / 100)
 ```
 
+## survival of annual seedlings
+Survival is not clearly affected by density, so the raw data mean is used.
+
+```{r h.A}
+summer_surv <- read_csv("../../big-oaks-field-experiment-2018-2019/microstegium-bipolaris/intermediate-data/summer_survival_data_2019_dens_exp.csv")
+
+(h.A <- summer_surv %>%
+    filter(plant_type == "Mv seedling" & treatment == "water") %>%
+    summarise(h.A = mean(survival)))
+```
+
 ## growth of annual in the absence of competition
 We oven-dried and weighed individual *M. vimineum* at the end of the growing season in 2019. Methods: field_density_experiment_2018_2019.docx
 
 ```{r v.A, out.width = "50%"}
-# import data
-A_bio_dat <- read_csv("../../big-oaks-field-experiment-2018-2019/microstegium-bipolaris/intermediate-data/mv_seeds_biomass_covariates_2019_density_exp.csv")
+# import model
+load("../../big-oaks-field-experiment-2018-2019/microstegium-bipolaris/output/mv_biomass_combined_background_model_2019_density_exp.rda")
 
-# choose the low density treatment because no neighbors is a really low biomass (update when data collection is complete)
-v.A_parms <- A_bio_dat %>%
-  filter(treatment == "water" & density_level == "low") %>%
-  summarise(v.A = mean_cl_boot(biomass_weight.g)$y,
-            v.A_low = mean_cl_boot(biomass_weight.g)$ymin,
-            v.A_hi = mean_cl_boot(biomass_weight.g)$ymax)
+# extract fixed effects
+A_bio_est <- fixef(mv_bio_mod) %>%
+  as_tibble() %>%
+  mutate(parm = c("max_bio_fungicide", "max_bio_water", "alpha_EvA_fungicide", "alpha_EvA_water", "alpha_EvS_fungicide", "alpha_EvS_water", "alpha_MvS_fungicide", "alpha_MvS_water"),
+         treatment = rep(c("fungicide", "water"), 4),
+         parm_type = c(rep("max_bio", 2), rep("alpha", 6)))
 
-v.A_parms$v.A
+# select intercept with disease suppression
+v.A_parms <- filter(A_bio_est, treatment == "water" & parm_type == "max_bio")
+
+# check
+v.A_parms$Estimate
 ```
 
-## reduction in annual growth due to intraspecific competition
-Same as above, but with higher density treatments.
+## reduction in annual growth due to competition
 
-```{r alpha.AA}
+```{r alpha.A}
 # subset data
-A_alphaAA_dat <- filter(A_bio_dat, treatment == "water" & density_level != "none" & background == "Mv seedling")
+A_alpha_dat <- filter(A_bio_est, treatment == "water" & parm_type == "alpha")
 
-# fit non-linear curve
-alpha.AA_mod <- nls(biomass_weight.g ~ bio0 / (1 + beta * background_density_tot), 
-                start = list(bio0 = v.A_parms$v.A, beta = 1), 
-                data = A_alphaAA_dat)
-summary(alpha.AA_mod)
-
-# look at fit
-alpha_AA_df <- tibble(background_density_tot = seq(0, 67, length.out = 100))
-alpha_AA_df$biomass_weight.g <- predict(alpha.AA_mod, newdata = alpha_AA_df)
-ggplot(A_alphaAA_dat, aes(x = background_density_tot, y = biomass_weight.g)) +
-  geom_point(size = 2) +
-  geom_line(data = alpha_AA_df)
-
-# save coefficients
-(v.A <- coef(alpha.AA_mod)[1])
-(alpha.AA <- coef(alpha.AA_mod)[2])
-# Stats: may need to do an Alee-effect type model if no neighbors is really low after all data are collected
-```
-
-## reduction in annual growth due to interspecific seedling competition
-Same as above, but with perennial seedling density treatments.
-
-```{r alpha.AS}
-# subset data
-A_alphaAS_dat <- filter(A_bio_dat, treatment == "water" & density_level != "none" & background == "Ev seedling")
-
-# fit non-linear curve
-alpha.AS_mod <- nls(biomass_weight.g ~ bio0 / (1 + beta * background_density_tot), 
-                start = list(bio0 = v.A_parms$v.A, beta = 1), 
-                data = A_alphaAS_dat)
-summary(alpha.AS_mod)
-
-# look at fit
-alpha_AS_df <- tibble(background_density_tot = seq(0, 19, length.out = 100))
-alpha_AS_df$biomass_weight.g <- predict(alpha.AS_mod, newdata = alpha_AS_df)
-ggplot(A_alphaAS_dat, aes(x = background_density_tot, y = biomass_weight.g)) +
-  geom_point(size = 2) +
-  geom_line(data = alpha_AS_df)
-
-# save coefficient
-(alpha.AS <- coef(alpha.AS_mod)[2])
-# make zero for now
-alpha.AS <- 0
-# Stats: need to update with all data
-```
-
-## reduction in annual growth due to interspecific adult competition
-Same as above, but with perennial adult density treatments.
-
-```{r alpha.AP}
-# subset data
-A_alphaAP_dat <- filter(A_bio_dat, treatment == "water" & density_level != "none" & background == "Ev adult")
-
-# fit non-linear curve
-alpha.AP_mod <- nls(biomass_weight.g ~ bio0 / (1 + beta * background_density_tot), 
-                start = list(bio0 = v.A_parms$v.A, beta = 1), 
-                data = A_alphaAP_dat)
-summary(alpha.AP_mod)
-
-# look at fit
-alpha_AP_df <- tibble(background_density_tot = seq(0, 9, length.out = 100))
-alpha_AP_df$biomass_weight.g <- predict(alpha.AP_mod, newdata = alpha_AP_df)
-ggplot(A_alphaAP_dat, aes(x = background_density_tot, y = biomass_weight.g)) +
-  geom_point(size = 2) +
-  geom_line(data = alpha_AP_df)
-
-# save coefficient
-(alpha.AP <- coef(alpha.AP_mod)[2])
-# Stats: need to update with all data
+# print values
+A_alpha_dat %>%
+  select(parm, Estimate)
 ```
 
 ## conversion from annual biomass to seed production
 
 ```{r y.A, out.width = "50%"}
-# round seed count
-A_seed_dat <- A_bio_dat %>%
-  filter(treatment == "water")
+# import model
+load("../../big-oaks-field-experiment-2018-2019/microstegium-bipolaris/output/mv_seeds_per_biomass_model_2018_2019_density_exp.rda")
 
-# fit regression
-y.A_mod <- lm(flower_seeds ~ 0 + biomass_weight.g, data = A_seed_dat)
-summary(y.A_mod)
+# look at coefficients
+summary(mv_seed_bio_mod)
 
-# extract coefficient for estimate
-(y.A0 <- coef(y.A_mod)[1])
-
-# see effect on highest observed biomass
-y.A0*max(A_seed_dat$biomass_weight.g, na.rm = T)
-# Stats: need to add in chasmogamous seeds and all of 2018 data
+# manually add up relevant coefficients (biomass, year2:biomass)
+(y.A0 <- 10.264 + 74.136)
 ```
 
 ## annual seed viability
@@ -222,6 +154,7 @@ w.A <- 0.4
 
 ## conversion from annual biomass to litter
 We measured biomass from the same area in the same plots with adjacent samples in October 2018 and April 2019.
+Note: source code needs to be located, but I'm fairly confident this value is correct.
 
 ```{r a, out.width = "50%"}
 # import data
@@ -257,13 +190,13 @@ include_graphics("../data/lit_figures/DeMeester_2010_Fig3.jpg")
     a. germination depends on the amount of litter      
 2. seeds that don't germinate (i.e., dormant) must survive to the next spring (1 year)  
 3. germinants grow and produce more seeds  
-    a. seed production depends on competition  
+    a. growth depends on competition  
 4. newly produced seeds must survive to the next spring (overwinter)   
 5. seedlings that survive to the next spring become adults (1 year)  
 6. adults also produce seeds, which depends on competition  
 
 ## perennial germination in the absence of litter
-*Elymus virginicus* germination from 50 planted seeds in field plots with litter removed and in greenhouse pots. Methods: field_litter_experiment_2019.docx, REU 2019 manuscript.
+*Elymus virginicus* germination from 50 planted seeds in field plots with litter removed and in greenhouse pots. Methods: field_litter_experiment_2019.docx, REU 2018 manuscript.
 ```{r g.S}
 # import data
 S_field_germ_dat <- read_csv("../../big-oaks-field-experiment-2018-2019/microstegium-bipolaris/data/both_germination_disease_jun_2019_litter_exp.csv") 
@@ -328,165 +261,96 @@ w.S <- 0.83
 (s.S <- s.S0/w.S)
 ```
 
-## perennial seed production in the absence of competition
-Stevens (1957) harvested one *Elymus virginicus* plant in North Dakota, which was growing with relatively low competition and judged to be of average size. He reported 435 seeds and 14 spikes. We assumed that perennial seedlings produce 1/10th the amount of seeds.
-```{r f.P}
-# import data
-S_seed_dat <- read_csv("../../big-oaks-field-experiment-2018-2019/microstegium-bipolaris/intermediate-data/ev_seeds_biomass_covariates_2019_density_exp.csv") 
 
-# adult seed production
-# specify background because 0 densities are repeated for each type
-S_seed_dat_adult <- S_seed_dat %>% filter(age == "adult")
-f.P0_parms <- filter(S_seed_dat_adult, background_density == 0 & background == "Ev adult" & treatment == "water") %>%
-  summarise(f.P0 = mean(seeds))
-(f.P <- f.P0_parms$f.P0 * w.S)
+## growth of perennial in the absence of competition
+We oven-dried and weighed individual *E. virginicus* at the end of the growing season in 2019. Methods: field_density_experiment_2018_2019.docx
 
-# first year seed production
-S_seed_dat_seed <- S_seed_dat %>% filter(age == "seedling")
-f.10_parms <- filter(S_seed_dat_seed, background_density == 0 & background == "Ev seedling" & treatment == "water") %>%
-  summarise(f.10 = mean(seeds))
-(f.P <- f.10_parms$f.10 * w.S)
+```{r v.SP, out.width = "50%"}
+# import models
+load("../../big-oaks-field-experiment-2018-2019/microstegium-bipolaris/output/ev_seedling_biomass_combined_background_model_2019_density_exp.rda")
+load("../../big-oaks-field-experiment-2018-2019/microstegium-bipolaris/output/ev_adult_biomass_combined_background_model_2019_density_exp.rda")
 
-# Stats: data needs conversion from this year and to be checked for mislabelling
+# extract fixed effects
+S_bio_est <- fixef(evs_bio_mod) %>%
+  as_tibble() %>%
+  mutate(parm = c("max_bio_fungicide", "max_bio_water", "alpha_EvA_fungicide", "alpha_EvA_water", "alpha_EvS_fungicide", "alpha_EvS_water", "alpha_MvS_fungicide", "alpha_MvS_water"),
+         treatment = rep(c("fungicide", "water"), 4),
+         parm_type = c(rep("max_bio", 2), rep("alpha", 6)))
+
+P_bio_est <- fixef(eva_bio_mod) %>%
+  as_tibble() %>%
+  mutate(parm = c("max_bio_fungicide", "max_bio_water", "alpha_EvA_fungicide", "alpha_EvA_water", "alpha_EvS_fungicide", "alpha_EvS_water", "alpha_MvS_fungicide", "alpha_MvS_water"),
+         treatment = rep(c("fungicide", "water"), 4),
+         parm_type = c(rep("max_bio", 2), rep("alpha", 6)))
+
+# select intercept with disease suppression
+v.S_parms <- filter(S_bio_est, treatment == "water" & parm_type == "max_bio")
+v.P_parms <- filter(P_bio_est, treatment == "water" & parm_type == "max_bio")
+
+# check
+v.S_parms$Estimate
+v.P_parms$Estimate
 ```
 
-## reduction in perennial seed production due to intraspecific competition from the same life stage
-Same as above, but with higher density treatments.
-```{r alpha.PP}
+## reduction in perennial seedling growth due to competition
+
+```{r alpha.S}
 # subset data
-P_alphaPP_dat <- filter(S_seed_dat_adult, treatment == "water" & background == "Ev adult")
-S_alphaSS_dat <- filter(S_seed_dat_seed, treatment == "water" & background == "Ev seedling")
+S_alpha_dat <- filter(S_bio_est, treatment == "water" & parm_type == "alpha")
 
-# fit non-linear curve
-alphaPP_mod <- nls(seeds ~ seed0 / (1 + beta * background_density_tot), 
-                start = list(seed0 = f.P0_parms$f.P0, beta = 1), 
-                data = P_alphaPP_dat)
-summary(alphaPP_mod)
-
-alphaSS_mod <- nls(seeds ~ seed0 / (1 + beta * background_density_tot), 
-                start = list(seed0 = f.10_parms$f.10, beta = 1), 
-                data = S_alphaSS_dat)
-summary(alphaSS_mod)
-
-# look at fit
-alphaPP_df <- tibble(background_density_tot = seq(0, 9, length.out = 100))
-alphaPP_df$seeds <- predict(alphaPP_mod, newdata = alphaPP_df)
-ggplot(P_alphaPP_dat, aes(x = background_density_tot, y = seeds)) +
-  geom_point(size = 2) +
-  geom_line(data = alphaPP_df)
-
-alphaSS_df <- tibble(background_density_tot = seq(0, 19, length.out = 100))
-alphaSS_df$seeds <- predict(alphaSS_mod, newdata = alphaSS_df)
-ggplot(S_alphaSS_dat, aes(x = background_density_tot, y = seeds)) +
-  geom_point(size = 2) +
-  geom_line(data = alphaSS_df)
-
-# save coefficients
-(alpha.PP <- coef(alphaPP_mod)[2])
-(alpha.SS <- coef(alphaSS_mod)[2])
-# change to zero for now
-alpha.SS <- 0
+# print values
+S_alpha_dat %>%
+  select(parm, Estimate)
 ```
+## reduction in perennial seedling growth due to competition
 
-## reduction in perennial seed production due to intraspecific competition from the other life stage
-Same as above, but with higher density treatments.
-```{r alpha.PS}
+```{r alpha.P}
 # subset data
-P_alphaPS_dat <- filter(S_seed_dat_adult, treatment == "water" & background == "Ev seedling")
-S_alphaSP_dat <- filter(S_seed_dat_seed, treatment == "water" & background == "Ev adult")
+P_alpha_dat <- filter(P_bio_est, treatment == "water" & parm_type == "alpha")
 
-# fit non-linear curve
-alphaPS_mod <- nls(seeds ~ seed0 / (1 + beta * background_density_tot), 
-                start = list(seed0 = f.P0_parms$f.P0, beta = 1), 
-                data = P_alphaPS_dat)
-summary(alphaPS_mod)
-
-alphaSP_mod <- nls(seeds ~ seed0 / (1 + beta * background_density_tot), 
-                start = list(seed0 = f.10_parms$f.10, beta = 1), 
-                data = S_alphaSP_dat)
-summary(alphaSP_mod)
-
-# look at fit
-alphaPS_df <- tibble(background_density_tot = seq(0, 19, length.out = 100))
-alphaPS_df$seeds <- predict(alphaPS_mod, newdata = alphaPS_df)
-ggplot(P_alphaPS_dat, aes(x = background_density_tot, y = seeds)) +
-  geom_point(size = 2) +
-  geom_line(data = alphaPS_df)
-
-alphaSP_df <- tibble(background_density_tot = seq(0, 9, length.out = 100))
-alphaSP_df$seeds <- predict(alphaSP_mod, newdata = alphaSP_df)
-ggplot(S_alphaSP_dat, aes(x = background_density_tot, y = seeds)) +
-  geom_point(size = 2) +
-  geom_line(data = alphaSP_df)
-
-# save coefficients
-(alpha.PS <- coef(alphaPS_mod)[2])
-(alpha.SP <- coef(alphaSP_mod)[2])
+# print values
+P_alpha_dat %>%
+  select(parm, Estimate)
 ```
 
-## reduction in perennial seed production due to interspecific competition
-Same as above, but with higher annual density treatments.
-```{r alpha.PA}
-# subset data
-P_alphaPA_dat <- filter(S_seed_dat_adult, treatment == "water" & background == "Mv seedling")
-S_alphaSA_dat <- filter(S_seed_dat_seed, treatment == "water" & background == "Mv seedling")
+## conversion from perennial biomass to seed production
 
-# fit non-linear curve
-alphaPA_mod <- nls(seeds ~ seed0 / (1 + beta * background_density_tot), 
-                start = list(seed0 = f.P0_parms$f.P0, beta = 1), 
-                data = P_alphaPA_dat)
-summary(alphaPA_mod)
+```{r y.SP, out.width = "50%"}
+# import model
+load("../../big-oaks-field-experiment-2018-2019/microstegium-bipolaris/output/ev_seeds_per_biomass_model_2019_density_exp.rda")
 
-alphaSA_mod <- nls(seeds ~ seed0 / (1 + beta * background_density_tot), 
-                start = list(seed0 = f.10_parms$f.10, beta = 1), 
-                data = S_alphaSA_dat)
-summary(alphaSA_mod)
+# look at coefficients
+summary(ev_seed_bio_mod)
 
-# look at fit
-alphaPA_df <- tibble(background_density_tot = seq(0, 67, length.out = 100))
-alphaPA_df$seeds <- predict(alphaPA_mod, newdata = alphaPA_df)
-ggplot(P_alphaPA_dat, aes(x = background_density_tot, y = seeds)) +
-  geom_point(size = 2) +
-  geom_line(data = alphaPA_df)
+# manually add up relevant coefficients (biomass, age:biomass)
+(y.S0 <- 18.6107 - 12.2603)
+(y.P0 <- 18.6107)
 
-alphaSA_df <- tibble(background_density_tot = seq(0, 67, length.out = 100))
-alphaSA_df$seeds <- predict(alphaSA_mod, newdata = alphaSA_df)
-ggplot(S_alphaSA_dat, aes(x = background_density_tot, y = seeds)) +
-  geom_point(size = 2) +
-  geom_line(data = alphaSA_df)
-
-# save coefficients
-(alpha.PA <- coef(alphaPA_mod)[2])
-(alpha.SA <- coef(alphaSA_mod)[2])
+# multiply by viability
+(y.S <- y.S0 * w.S)
+(y.P <- y.P0 * w.S)
 ```
 
-## seedling and adult survival in the absence of competition
-```{r s.1 and s.P}
-# import data
-S_surv_dat <- read_csv("../../big-oaks-field-experiment-2018-2019/microstegium-bipolaris/intermediate-data/ev_survival_2018_density_exp.csv") 
+## seedling and adult survival
+Winter survival only includes those that survived the summer. Summer and winter survival are multiplied for a full year of survival.
 
-# join with plot data (need to edit experiment code to add this in)
-S_surv_dat2 <- A_bio_dat %>%
-  select(site, plot, treatment, background, background_sp, background_density, density_level, background_density_tot) %>%
-  right_join(S_surv_dat)
+```{r h.S and h.P}
+winter_surv <- read_csv("../../big-oaks-field-experiment-2018-2019/microstegium-bipolaris/intermediate-data/winter_survival_data_2018_2019_dens_exp.csv")
 
-# seedling survival
-s.1_parms <- S_surv_dat2 %>% 
-  filter(month == "April" & age == "seedling" & density_level == "none" & background == "Ev adult" & treatment == "water") %>%
-    summarise(s.1 = mean_cl_boot(survival)$y,
-            s.1_low = mean_cl_boot(survival)$ymin,
-            s.1_hi = mean_cl_boot(survival)$ymax)
+(h.S <- summer_surv %>%
+    filter(plant_type == "Ev seedling" & treatment == "water") %>%
+    summarise(summer = mean(survival)) %>%
+    merge(winter_surv %>%
+                filter(plant_type == "Ev seedling" & treatment == "water") %>%
+                summarise(winter = mean(survival)), all = T) %>%
+    mutate(yearly = summer * winter))
 
-# adult survival
-s.P_parms <- S_surv_dat2 %>% 
-  filter(month == "April" & age == "adult" & density_level == "none" & background == "Ev adult" & treatment == "water") %>%
-    summarise(s.P = mean_cl_boot(survival)$y,
-            s.P_low = mean_cl_boot(survival)$ymin,
-            s.P_hi = mean_cl_boot(survival)$ymax)
-
-(s.1 <- s.1_parms$s.1)
-(s.P <- s.P_parms$s.P)
-
-# Stats: used old code from 2018 - need to update with 2019 summer survival data
+(h.P <- summer_surv %>%
+    filter(plant_type == "Ev adult" & treatment == "water") %>%
+    summarise(summer = mean(survival)) %>%
+    merge(winter_surv %>%
+                filter(plant_type == "Ev adult" & treatment == "water") %>%
+                summarise(winter = mean(survival)), all = T) %>%
+    mutate(yearly = summer * winter))
 ```
 

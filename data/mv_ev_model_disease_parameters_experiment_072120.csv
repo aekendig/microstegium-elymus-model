@@ -1,0 +1,29 @@
+﻿parameter,symbol,value,units,notes
+annual germination without litter,g.A,0.6,year^-1^,"mv_germination_disease_analysis_2018_litter_exp.R, could include effect of disease on germination here"
+litter suppression of annual germination,beta.A,1.03,g^-1^ year^-1^,mv_germination_disease_analysis_2018_litter_exp.R
+annual seed survival,s.A,0.125,year^-1^,Redwood et al. 2018
+annual seedling survival,h.A,0.95,year^-1^,survival_analysis_2018_2019_density_exp.R
+annual biomass without competition,v.A,26.47,g year^-1^,"mv_biomass_analysis_2018_2019_density_exp.R, could adjust this by direct effects of fungicide"
+intraspecific effect of competition on annual,alpha.AA,0.086,year^-1^,mv_biomass_analysis_2018_2019_density_exp.R
+interspecific seedling effect of competition on annual,alpha.AS,0.078,year^-1^,mv_biomass_analysis_2018_2019_density_exp.R
+interspecific adult effect of competition on annual,alpha.AP,0.13,year^-1^,mv_biomass_analysis_2018_2019_density_exp.R
+annual biomass-seed conversion,y.A,33.76,seeds g^-1^ year^-1^,"mv_seeds_per_biomass_analysis_2018_2019_density_exp.R, Redwood et al. 2018"
+annual litter-biomass conversion,a,1,year^-1^,locate code
+litter decomposition rate,b,0.67,year^-1^,DeMeester and Richter 2010
+perennial germination without litter,g.S,0.44,year^-1^,average of 2019 field litter experiment and 2018 REU experiment
+litter suppression of perennial germination,beta.S,0.024,g^-1^ year^-1^,NLS fit to greenhouse experiment data
+perennial seed survival,s.S,0.11,year^-1^,Garrison and Stier 2010
+seedling perennial biomass without competition,v.S,1.57,g year^-1^,ev_biomass_analysis_2019_density_exp.R
+adult perennial biomass without competition,v.P,6.85,g year^-1^,ev_biomass_analysis_2019_density_exp.R
+intraspecific seedling effect of competition on perennial seedling,alpha.SS,0.0076,year^-1^,ev_biomass_analysis_2019_density_exp.R
+interspecific effect of competition on perennial seedling,alpha.SA,0.011,year^-1^,ev_biomass_analysis_2019_density_exp.R
+intraspecific adult effect of competition on perennial seedling,alpha.SP,0.058,year^-1^,ev_biomass_analysis_2019_density_exp.R
+intraspecific adult effect of competition on perennial adult,alpha.PP,0.26,year^-1^,ev_biomass_analysis_2019_density_exp.R
+intraspecific seedling effect of competition on perennial adult,alpha.PS,0.043,year^-1^,ev_biomass_analysis_2019_density_exp.R
+interspecific effect of competition on perennial adult,alpha.PA,0.048,year^-1^,ev_biomass_analysis_2019_density_exp.R
+perennial seedling biomass-seed conversion,y.S,5.27,seeds g^-1^ year^-1^,ev_seeds_per_biomass_analysis_2019_density_exp.R
+perennial adult biomass-seed conversion,y.P,15.45,seeds g^-1^ year^-1^,ev_seeds_per_biomass_analysis_2019_density_exp.R
+perennial seedling summer survival,h.S,0.89,year^-1^,survival_analysis_2018_2019_density_exp.R
+perennial adult summer survival,h.P,0.88,year^-1^,survival_analysis_2018_2019_density_exp.R
+perennial seedling winter survival,w.S,0.9,year^-1^,survival_analysis_2018_2019_density_exp.R
+perennial adult winter survival,w.P,0.98,year^-1^,survival_analysis_2018_2019_density_exp.R

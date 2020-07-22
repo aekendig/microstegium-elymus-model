@@ -1,0 +1,252 @@
+---
+title: "microstegium_elymus_model_summary"
+author: "Amy Kendig"
+date: "07/21/2020"
+output: 
+  bookdown::pdf_document2: default
+---
+
+```{r options, include = F}
+library(knitr)
+# wrap text
+opts_chunk$set(tidy.opts=list(width.cutoff = 70), tidy = T)
+```
+
+# Summary
+Simulation of *Microstegium vimineum* and *Elymus virgincus* over time. *M. vimineum* is an invasive annual grass and *E. virginicus* is a native perennial grass. *E. virginicus* grows by itself for 100 years, and then *M. vimineum* is introduced. Disease effects arise 100 years later. Population dynamics are similar in the absence of disease and when both species are susceptible to disese. In both cases, *M. vimineum* reduces the size of the *E. virginicus* population. *M. vimineum* is able to recover population losses due to disease. *E. virginicus* seedlings are impacted more than adults. When only *M. vimineum* is susceptible to disease, its population crashes.
+
+
+# Set-up
+```{r set-up, message = F, warning = F}
+# clear all existing data
+rm(list=ls())
+
+# open libraries
+library(data.table)
+library(plotly)
+library(cowplot)
+library(popbio)
+library(tidyverse)
+
+# plotting parameters
+axisText=10
+axisTitle=12
+legendText=10
+legendTitle=0
+colPal = c("#0072B2", "#56B4E9", "#009E73", "#E69F00")
+
+# import data
+params <- read_csv("../data/mv_ev_model_parameters_experiment_072120.csv", col_types = cols())
+params_dis <- read_csv("../data/mv_ev_model_disease_parameters_experiment_072120.csv", col_types = cols())
+```
+
+# Parameters
+
+## Formatting:
+* subscripts follow "."
+* A = annual plant
+* L = annual litter
+* P = perennial adult (at least 1 year old)
+* S = perennial seedling (germinated that spring)  
+* Composite parameters are capitalized  
+
+## Settings:
+```{r parameters, tidy = F}
+# simulation time
+simtime = 500
+
+# invasion time
+invtime = 100
+
+# initial conditions
+N0.A = 0 # initial annual population size
+N0.S = 1 # initial perennial seedling population size
+N0.P = 0 # initial perennial adult population size
+L0 = 0 # initial annual litter amount
+Ni.A = 1 # introduction of annual 
+```
+
+## Literature:
+```{r parameters-table, echo = F, results = 'asis'}
+kable(params, caption = "Model parameter values without disease", format = "markdown", padding = 0)
+
+kable(params, caption = "Model parameter values with disease", format = "markdown", padding = 0)
+```
+
+
+# Model
+
+## Population equations:
+Assume counts are being conducted in the spring  
+  
+N.A[t+1] = s.A * (1-G.A) * N.A[t] + G.A * h.A * V.A * y.A * N.A[t]  
+annual seeds = seed bank survival + seed production  
+
+L[t+1] = a * G.A * h.A * V.A * N.A[t] + (1-b) * L[t]    
+annual litter = biomass from previous fall + decomposition  
+  
+N.S[t+1] = s.S * (1-G.S) * N.S[t] + G.S * h.S * V.S * y.S * N.S[t] + h.P * V.P * y.P * N.P[t]  
+perennial seeds = seed bank survival + seedling seed production + adult seed production  
+  
+N.P[t+1] = h.P * w.P * N.P[t] + G.S * h.S * w.S * N.S[t]  
+perennial adults = survival + seedling maturation  
+
+## Litter suppression of germination
+G.A = g.A / (1 + beta.A * L[t])  
+annual seed germination = germination in the absence of litter / reduction due to litter 
+
+G.S = g.S / (1 + beta.S * L[t])  
+perennial seed germination = germination in the absence of litter / reduction due to litter 
+
+## Density-dependence on growth and fecundity
+V.A = v.A / (1 + alpha.AA * G.A * h.A * N.A[t] + alpha.AP * h.P * N.P[t] + alpha.AS * h.S * G.S * N.S[t])    
+annual growth = growth in the absence of competition / (competition from annuals + competition from perennial adults + competition from perennial seedlings)
+
+V.S = v.S / (1 + alpha.SA * G.A * h.A * N.A[t] + alpha.SP * h.P * N.P[t] + alpha.SS * h.S * G.S * N.S[t])    
+perennial seedling growth = growth in the absence of competition / (competition from annuals + competition from perennial adults + competition from perennial seedlings)
+
+V.P = v.P / (1 + alpha.PA * G.A * h.A * N.A[t] + alpha.PP * h.P * N.P[t] + alpha.PS * h.S * G.S * N.S[t])    
+perennial adult growth = growth in the absence of competition / (competition from annuals + competition from perennial adults + competition from perennial seedlings)
+
+
+# Function
+```{r model}
+simFun = function(params, N0.A, N0.S, N0.P, L0, Ni.A, simtime, invtime){
+  
+  # define parameters
+  g.A = filter(params, symbol == "g.A")$value
+  beta.A = filter(params, symbol == "beta.A")$value
+  s.A = filter(params, symbol == "s.A")$value
+  h.A = filter(params, symbol == "h.A")$value
+  v.A = filter(params, symbol == "v.A")$value
+  alpha.AA = filter(params, symbol == "alpha.AA")$value
+  alpha.AS = filter(params, symbol == "alpha.AS")$value
+  alpha.AP = filter(params, symbol == "alpha.AP")$value
+  y.A = filter(params, symbol == "y.A")$value
+  a = filter(params, symbol == "a")$value
+  b = filter(params, symbol == "b")$value
+  g.S = filter(params, symbol == "g.S")$value
+  beta.S = filter(params, symbol == "beta.A")$value
+  s.S = filter(params, symbol == "s.S")$value
+  v.S = filter(params, symbol == "v.S")$value
+  v.P = filter(params, symbol == "v.P")$value
+  alpha.SA = filter(params, symbol == "alpha.SA")$value
+  alpha.SS = filter(params, symbol == "alpha.SS")$value
+  alpha.SP = filter(params, symbol == "alpha.SP")$value
+  alpha.PA = filter(params, symbol == "alpha.PA")$value
+  alpha.PS = filter(params, symbol == "alpha.PS")$value
+  alpha.PP = filter(params, symbol == "alpha.PP")$value
+  y.S = filter(params, symbol == "y.S")$value
+  y.P = filter(params, symbol == "y.P")$value
+  h.S = filter(params, symbol == "h.S")$value
+  h.P = filter(params, symbol == "h.P")$value
+  w.S = filter(params, symbol == "w.S")$value
+  w.P = filter(params, symbol == "w.P")$value
+
+  # initialize populations
+  N.A=rep(NA,simtime)
+  N.S=rep(NA,simtime)
+  N.P=rep(NA,simtime)
+  L=rep(NA,simtime)
+  
+  N.A[1]=N0.A
+  N.S[1]=N0.S
+  N.P[1]=N0.P
+  L[1]=L0
+  
+  # simulate population dynamics
+  for(t in 1:(simtime - 1)){	
+    
+    # introduce annual at t=100
+    N.A[t] = ifelse(N0.A == 0 & t == invtime, Ni.A, N.A[t])
+    
+    # reduce germination due to litter
+    G.A = g.A / (1 + beta.A * L[t])
+    G.S = g.S / (1 + beta.S * L[t])
+  
+    # reduce fecundity or growth due to competition
+    V.A = v.A / (1 + alpha.AA * G.A * h.A * N.A[t] + alpha.AP * h.P * N.P[t] + alpha.AS * h.S * G.S * N.S[t]) 
+    V.S = v.S / (1 + alpha.SA * G.A * h.A * N.A[t] + alpha.SP * h.P * N.P[t] + alpha.SS * h.S * G.S * N.S[t])
+    V.P = v.P / (1 + alpha.PA * G.A * h.A * N.A[t] + alpha.PP * h.P * N.P[t] + alpha.PS * h.S * G.S * N.S[t])
+    
+    # population size
+    N.A[t+1] = s.A * (1-G.A) * N.A[t] + G.A * h.A * V.A * y.A * N.A[t]
+    L[t+1] = a * G.A * h.A * V.A * N.A[t] + (1-b) * L[t]    
+    N.S[t+1] = s.S * (1-G.S) * N.S[t] + G.S * h.S * V.S * y.S * N.S[t] + h.P * V.P * y.P * N.P[t]
+    N.P[t+1] = h.P * w.P * N.P[t] + G.S * h.S * w.S * N.S[t]  
+    
+    # correct to prevent negative numbers
+    N.A[t+1] = ifelse(N.A[t+1] < 1, 0, N.A[t+1])
+    L[t+1] = ifelse(L[t+1] < 1, 0, L[t+1])
+    N.S[t+1] = ifelse(N.S[t+1] < 1, 0, N.S[t+1])
+    N.P[t+1] = ifelse(N.P[t+1] < 1, 0, N.P[t+1])
+  }
+  
+  # save data
+  dfN = data.frame(time = rep(1:simtime, 4), N = c(N.S, N.P, N.A, L), species = rep(c("Elymus seedling", "Elymus adult", "Microstegium", "Microstegium litter"), each = simtime))
+  
+  # return
+  return(dfN)
+}
+```
+
+# Simulations
+
+## No disease
+```{r no-dis, tidy = F}
+noDisSim <- simFun(params, N0.A, N0.S, N0.P, L0, Ni.A, simtime, invtime)
+noDisSim %>%
+  ggplot(aes(x = time, y = log(N+1), color = species)) +
+  geom_line(size = 1.5) + 
+  theme(axis.text = element_text(size = axisText),
+        axis.title = element_text(size = axisTitle),
+        legend.text = element_text(size = legendText),
+        legend.title = element_text(size = legendTitle)) +
+  scale_color_manual(values = colPal)
+```
+
+### Microstegium on non-transformed scale
+```{r mv-zoom, tidy = F}
+noDisSim %>%
+  filter(species %in% c("Microstegium", "Microstegium litter")) %>%
+  ggplot(aes(x = time, y = N, color = species)) +
+  geom_line(size = 1.5) + 
+  theme(axis.text = element_text(size = axisText),
+        axis.title = element_text(size = axisTitle),
+        legend.text = element_text(size = legendText),
+        legend.title = element_text(size = legendTitle)) +
+  scale_color_manual(values = colPal[3:4])
+```
+
+## With disease
+```{r no-dis, tidy = F}
+disSim <- simFun(params_dis, N0.A, N0.S, N0.P, L0, Ni.A, simtime, invtime)
+disSim %>%
+  ggplot(aes(x = time, y = log(N+1), color = species)) +
+  geom_line(size = 1.5) + 
+  theme(axis.text = element_text(size = axisText),
+        axis.title = element_text(size = axisTitle),
+        legend.text = element_text(size = legendText),
+        legend.title = element_text(size = legendTitle)) +
+  scale_color_manual(values = colPal)
+```
+
+### Time to extinction?
+```{r dis-elymus-time, tidy = F}
+disSim %>%
+  filter(species == "Elymus seedling" & N == 0) %>%
+  filter(time == min(time))
+```
+
+## No disease co-introduction
+```{r co-no-dis, tidy = F}
+coNoDisSim <- simFun(params, N0.A, N0.S, N0.P, L0, Ni.A, simtime, 1)
+coNoDisSim %>%
+  ggplot(aes(x = time, y = log(N+1), color = species)) +
+  geom_line(size = 1.5) + 
+  theme(axis.text = element_text(size = axisText),
+        axis.title = element_text(size = axisTitle),
+        legend.text = element_text(size = legendText),
+        legend.title = element_text(size = legendTitle)) +
+  scale_color_manual(values = colPal)
+```
