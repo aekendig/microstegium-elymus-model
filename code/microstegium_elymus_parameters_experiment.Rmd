@@ -40,14 +40,24 @@ library(glmmTMB)
 ```{r g.A}
 # import model
 load("../../big-oaks-field-experiment-2018-2019/microstegium-bipolaris/output/mv_germination_litter_model_2018_litter_exp.rda")
+load("../../big-oaks-field-experiment-2018-2019/microstegium-bipolaris/output/mv_germination_all_data_model_2018_density_exp.rda")
 
 # extract fixed effects
 A_germ_est <- fixef(mv_germ_litter_mod) %>%
   as_tibble() %>%
   mutate(parm = c("max_germ_autoclaved", "max_germ_live", "alpha_autoclaved", "alpha_live"))
 
+# check
+A_germ_est
+# germination with(out) autoclaved litter is lower than with(out) live litter (net benefit of live litter)
+# use the live litter values
+
+# germination of seeds from fungicide-treated and control plots
+summary(mv_germ_mod)
+# negative effect of fungicide
+
 # select the no-litter values
-g.A_parms <- filter(A_germ_est, parm == "max_germ_autoclaved") %>%
+g.A_parms <- filter(A_germ_est, parm == "max_germ_live") %>%
   mutate(Estimate = Estimate / 200,
          Q2.5 = Q2.5 / 200,
          Q97.5 = Q97.5 / 200)
@@ -61,7 +71,7 @@ Same experiment as above except also using plots with litter added
 
 ```{r beta.A, out.width = "50%", tidy = F}
 # select the no-litter values
-beta.A_parms <- filter(A_germ_est, parm == "alpha_autoclaved")
+beta.A_parms <- filter(A_germ_est, parm == "alpha_live")
 
 beta.A_parms$Estimate
 ```
@@ -104,8 +114,15 @@ A_bio_est <- fixef(mv_bio_mod) %>%
          treatment = rep(c("fungicide", "water"), 4),
          parm_type = c(rep("max_bio", 2), rep("alpha", 6)))
 
+# conversion to account for direct (negative) fungicide effects
+# fungicide_effects_greenhouse_2019.R
+mv_fung_bio_conv <- 23.80 / 21.05
+
 # select intercept with disease suppression
-v.A_parms <- filter(A_bio_est, treatment == "fungicide" & parm_type == "max_bio")
+v.A_parms <- filter(A_bio_est, treatment == "fungicide" & parm_type == "max_bio") %>%
+  mutate(Estimate = Estimate * mv_fung_bio_conv,
+         Q2.5 = Q2.5 * mv_fung_bio_conv,
+         Q97.5 = Q97.5 * mv_fung_bio_conv)
 
 # check
 v.A_parms$Estimate
@@ -125,14 +142,19 @@ A_alpha_dat %>%
 ## conversion from annual biomass to seed production
 
 ```{r y.A, out.width = "50%"}
+# treatments are combined because fungicide treatment values led to fluctuations in Elymus seedlings that made simulations difficult to interpret
+
 # import model
-load("../../big-oaks-field-experiment-2018-2019/microstegium-bipolaris/output/mv_seeds_per_biomass_model_2018_2019_density_exp.rda")
+load("../../big-oaks-field-experiment-2018-2019/microstegium-bipolaris/output/mv_seeds_per_biomass_no_treatment_model_2018_2019_density_exp.rda")
 
 # look at coefficients
-summary(mv_seed_bio_mod)
+summary(mv_seed_bio_no_treat_mod)
 
-# manually add up relevant coefficients (biomass, year2:biomass, fungicide:biomass, year2:fungicide:biomass)
-(y.A0 <- 10.264 + 74.136 + 4.905 - 12.440)
+# manually define intercept: intercept + year2 
+(y.Aint0 <- exp(6.9224 - 2.4754))
+
+# manually add up relevant coefficients (biomass, year2:biomass)
+(y.A <- 0.2299 + 0.6077)
 ```
 
 ## annual seed viability
@@ -141,7 +163,7 @@ Using Fig. 2A from Redwood et al. (2018), 40% of the seeds survive from December
 ```{r w.A, out.width = "50%"}
 include_graphics("../data/lit_figures/Redwood_2018_Fig2A.jpg")
 w.A <- 0.4
-(y.A <- y.A0 * w.A)
+(y.Aint <- y.Aint0 * w.A)
 (s.A <- s.A0 / w.A)
 ```
 
@@ -200,7 +222,7 @@ include_graphics("../data/lit_figures/DeMeester_2010_Fig3.jpg")
 ```{r g.S}
 # import data
 S_field_germ_dat <- read_csv("../../big-oaks-field-experiment-2018-2019/microstegium-bipolaris/data/both_germination_disease_jun_2019_litter_exp.csv") 
-S_house_germ_dat <- read_csv("../../microstegium-litter-reu/output/ev_establishment_data.csv") 
+load("../../microstegium-litter-reu/output/ev_establishment_model.rda") 
 
 # estimate from field
 g.S_field <- filter(S_field_germ_dat, treatment == "removal") %>%
@@ -210,15 +232,13 @@ g.S_field <- filter(S_field_germ_dat, treatment == "removal") %>%
             g.S_hi = mean_cl_boot(prop_germ)$ymax)
 
 # estimate from greenhouse
-g.S_house <- filter(S_house_germ_dat, Litter == "None" & SpPresent == "Ev") %>%
-  mutate(prop_germ = NewGermEv/50) %>%
-  summarise(g.S = mean_cl_boot(prop_germ)$y,
-            g.S_low = mean_cl_boot(prop_germ)$ymin,
-            g.S_hi = mean_cl_boot(prop_germ)$ymax)
+g.S_house <- tibble(SpPresent = c("Ev", "Ev"),
+                    Litter.yes = c(0, 1) %>% as.factor()) %>%
+  mutate(g.S = predict(eeMod4, newdata = ., type = "response")/50)
 
 g.S_field$g.S
 g.S_house$g.S
-(g.S <- mean(c(g.S_field$g.S, g.S_house$g.S)))
+(g.S <- mean(c(g.S_field$g.S, filter(g.S_house, Litter.yes == 0)$g.S)))
 
 ```
 
@@ -227,25 +247,19 @@ Same experiment as above except also using plots with litter added
 
 ```{r beta.S, out.width = "50%", tidy = F}
 
-# subset data
-S_litter_dat <- filter(S_house_germ_dat, SpPresent == "Ev")  %>%
-  mutate(prop_germ = NewGermEv/50)
+# presence/absence of litter matters
+# based on ev_germination_analysis_2018_litter_exp, seed germination basically drops to zero with any litter in the field
+# better estimate from greenhouse
+# the presence/absence function made the simulation act weird, so I fit a Beverton-Holt function to the greenhouse data
 
-# fit non-linear curve
-beta.S_mod <- nls(prop_germ ~ germ0 / (1 + beta * Litter.g), 
-                start = list(germ0 = g.S_house$g.S, beta = 1), 
-                data = S_litter_dat)
-summary(beta.S_mod)
+# import model
+load("../../microstegium-litter-reu/output/ev_beverton_holt_establishment_modl.rda") 
 
-# look at fit
-litter_S_germ_df <- tibble(Litter.g = seq(0, 3.7, length.out = 100))
-litter_S_germ_df$prop_germ <- predict(beta.S_mod, newdata = litter_S_germ_df)
-ggplot(S_litter_dat, aes(x = Litter.g, y = prop_germ)) +
-  geom_point(size = 2) +
-  geom_line(data = litter_S_germ_df)
+# summary
+summary(ev_bh_mod)
 
 # save beta
-(beta.S <- coef(beta.S_mod)[2])
+(beta.S <- fixef(ev_bh_mod)[2, 1])
 ```
 
 ## survival of dormant perennial seeds
@@ -283,8 +297,15 @@ P_bio_est <- fixef(eva_bio_mod) %>%
          treatment = rep(c("fungicide", "water"), 4),
          parm_type = c(rep("max_bio", 2), rep("alpha", 6)))
 
+# account for direct (positive) effects of fungicide on seedling growth
+# fungicide_effects_greenhouse_2019.R
+ev_fung_bio_conv <- 13.39 / 13.84
+
 # select intercept with disease suppression
-v.S_parms <- filter(S_bio_est, treatment == "fungicide" & parm_type == "max_bio")
+v.S_parms <- filter(S_bio_est, treatment == "fungicide" & parm_type == "max_bio") %>%
+  mutate(Estimate = Estimate * ev_fung_bio_conv,
+         Q2.5 = Q2.5 * ev_fung_bio_conv,
+         Q97.5 = Q97.5 * ev_fung_bio_conv)
 v.P_parms <- filter(P_bio_est, treatment == "fungicide" & parm_type == "max_bio")
 
 # check
@@ -315,20 +336,26 @@ P_alpha_dat %>%
 
 ## conversion from perennial biomass to seed production
 
-```{r y.SP, out.width = "50%"}
+```{r y.S and y.P, out.width = "50%"}
+# treatments are combined because fungicide treatment values led to fluctuations in Elymus seedlings that made simulations difficult to interpret
+
 # import model
-load("../../big-oaks-field-experiment-2018-2019/microstegium-bipolaris/output/ev_seeds_per_biomass_model_2019_density_exp.rda")
+load("../../big-oaks-field-experiment-2018-2019/microstegium-bipolaris/output/ev_seeds_per_biomass_no_treatment_model_2019_density_exp.rda")
 
 # look at coefficients
-summary(ev_seed_bio_mod)
+summary(ev_seed_bio_no_treat_mod)
 
-# manually add up relevant coefficients (biomass, age:biomass, fungicide:biomass, age:fungicide:biomass)
-(y.S0 <- 18.6107 - 12.2603 + 3.6171 - 2.3515)
-(y.P0 <- 18.6107 + 3.6171)
+# manually add up intercept values (intercept, age)
+(y.Sint0 <- exp(2.0709 - 0.5426))
+(y.Pint0 <- exp(2.0709))
+
+# manually add up relevant coefficients (biomass, age:biomass)
+(y.S <- 1.1918 - 0.3162)
+(y.P <- 1.1918)
 
 # multiply by viability
-(y.S <- y.S0 * w.S)
-(y.P <- y.P0 * w.S)
+(y.Sint <- y.Sint0 * w.S)
+(y.Pint <- y.Pint0 * w.S)
 ```
 
 ## seedling and adult survival

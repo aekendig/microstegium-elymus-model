@@ -7,11 +7,12 @@ annual biomass without competition,v.A,42.23,g year^-1^,"mv_biomass_analysis_201
 intraspecific effect of competition on annual,alpha.AA,0.19,year^-1^,mv_biomass_analysis_2018_2019_density_exp.R
 interspecific seedling effect of competition on annual,alpha.AS,0.19,year^-1^,mv_biomass_analysis_2018_2019_density_exp.R
 interspecific adult effect of competition on annual,alpha.AP,0.13,year^-1^,mv_biomass_analysis_2018_2019_density_exp.R
-annual biomass-seed conversion,y.A,30.75,seeds g^-1^ year^-1^,"mv_seeds_per_biomass_analysis_2018_2019_density_exp.R, Redwood et al. 2018"
+annual biomass-seed conversion intercept,y.Aint,34.15,seeds g^-1^ year^-1^,"mv_seeds_per_biomass_analysis_2018_2019_density_exp.R, Redwood et al. 2018"
+annual biomass-seed conversion slope,y.A,0.84,log-seeds log-g^-1^,mv_seeds_per_biomass_analysis_2018_2019_density_exp.R
 annual litter-biomass conversion,a,1,year^-1^,locate code
 litter decomposition rate,b,0.67,year^-1^,DeMeester and Richter 2010
 perennial germination without litter,g.S,0.44,year^-1^,average of 2019 field litter experiment and 2018 REU experiment
-litter suppression of perennial germination,beta.S,0.024,g^-1^ year^-1^,NLS fit to greenhouse experiment data
+litter suppression of perennial germination,beta.S,0.027,g^-1^ year^-1^,NLS fit to greenhouse experiment data
 perennial seed survival,s.S,0.11,year^-1^,Garrison and Stier 2010
 seedling perennial biomass without competition,v.S,2,g year^-1^,"ev_biomass_analysis_2019_density_exp.R, fungicide_effects_greenhouse_2019.R"
 adult perennial biomass without competition,v.P,8.48,g year^-1^,ev_biomass_analysis_2019_density_exp.R
@@ -21,8 +22,10 @@ intraspecific adult effect of competition on perennial seedling,alpha.SP,0.047,y
 intraspecific adult effect of competition on perennial adult,alpha.PP,0.069,year^-1^,ev_biomass_analysis_2019_density_exp.R
 intraspecific seedling effect of competition on perennial adult,alpha.PS,0.18,year^-1^,ev_biomass_analysis_2019_density_exp.R
 interspecific effect of competition on perennial adult,alpha.PA,0.065,year^-1^,ev_biomass_analysis_2019_density_exp.R
-perennial seedling biomass-seed conversion,y.S,6.32,seeds g^-1^ year^-1^,ev_seeds_per_biomass_analysis_2019_density_exp.R
-perennial adult biomass-seed conversion,y.P,18.45,seeds g^-1^ year^-1^,ev_seeds_per_biomass_analysis_2019_density_exp.R
+perennial seedling biomass-seed conversion intercept,y.Sint,3.83,seeds g^-1^ year^-1^,ev_seeds_per_biomass_analysis_2019_density_exp.R
+perennial seedling biomass-seed conversion slope,y.S,0.88,log-seeds log-g^-1^,ev_seeds_per_biomass_analysis_2019_density_exp.R
+perennial adult biomass-seed conversion intercept,y.Pint,6.58,seeds g^-1^ year^-1^,ev_seeds_per_biomass_analysis_2019_density_exp.R
+perennial adult biomass-seed conversion slope,y.P,1.19,log-seeds log-g^-1^,ev_seeds_per_biomass_analysis_2019_density_exp.R
 perennial seedling summer survival,h.S,0.98,year^-1^,survival_analysis_2018_2019_density_exp.R
 perennial adult summer survival,h.P,0.95,year^-1^,survival_analysis_2018_2019_density_exp.R
 perennial seedling winter survival,w.S,0.92,year^-1^,survival_analysis_2018_2019_density_exp.R

@@ -1,7 +1,7 @@
 ---
 title: "microstegium_elymus_model_summary"
 author: "Amy Kendig"
-date: "07/21/2020"
+date: "07/24/2020"
 output: 
   bookdown::pdf_document2: default
 ---
@@ -13,8 +13,7 @@ opts_chunk$set(tidy.opts=list(width.cutoff = 70), tidy = T)
 ```
 
 # Summary
-Simulation of *Microstegium vimineum* and *Elymus virgincus* over time. *M. vimineum* is an invasive annual grass and *E. virginicus* is a native perennial grass. *E. virginicus* grows by itself for 100 years, and then *M. vimineum* is introduced. Disease effects arise 100 years later. Population dynamics are similar in the absence of disease and when both species are susceptible to disese. In both cases, *M. vimineum* reduces the size of the *E. virginicus* population. *M. vimineum* is able to recover population losses due to disease. *E. virginicus* seedlings are impacted more than adults. When only *M. vimineum* is susceptible to disease, its population crashes.
-
+Simulation of *Microstegium vimineum* and *Elymus virgincus* over time. *M. vimineum* is an invasive annual grass and *E. virginicus* is a native perennial grass, with two stages: seedling and adult. Simulations are conducted for each species alone and invading the other after it has had time to establish (100 years). Simulations are also conducted in which both species are introduced to the system at the same time. In the absence of disease, *M. vimineum* is predicted to persist alone, but it is out-competed by *E. virginicus*. In the presence of disease, the competitive hierarchy reverses: *E. virginicus* can persist alone, but it is outcompeted by *M. vimineum*. *Microstegium vimineum* experiences a net benefit from the presence of disease, likely due to lower intraspecific competition, even though its biomass production and survival are lower. *Elymus virgincus* also experiences losses in biomass and survival in the presence of disease, but intraspecific competition does not decrease. Results were consistent whether species invaded one another or were "co-introduced".
 
 # Set-up
 ```{r set-up, message = F, warning = F}
@@ -36,13 +35,13 @@ legendTitle=0
 colPal = c("#0072B2", "#56B4E9", "#009E73", "#E69F00")
 
 # import data
-params <- read_csv("../data/mv_ev_model_parameters_experiment_072120.csv", col_types = cols())
-params_dis <- read_csv("../data/mv_ev_model_disease_parameters_experiment_072120.csv", col_types = cols())
+params <- read_csv("../data/mv_ev_model_parameters_experiment_072420.csv", col_types = cols())
+params_dis <- read_csv("../data/mv_ev_model_disease_parameters_experiment_072420.csv", col_types = cols())
 ```
 
 # Parameters
 
-## Formatting:
+## Formatting
 * subscripts follow "."
 * A = annual plant
 * L = annual litter
@@ -50,42 +49,46 @@ params_dis <- read_csv("../data/mv_ev_model_disease_parameters_experiment_072120
 * S = perennial seedling (germinated that spring)  
 * Composite parameters are capitalized  
 
-## Settings:
+## Settings
 ```{r parameters, tidy = F}
 # simulation time
-simtime = 500
+simtime = 10000
 
 # invasion time
-invtime = 100
+invtime = 6000
 
 # initial conditions
-N0.A = 0 # initial annual population size
+N0.A = 1 # initial annual population size
 N0.S = 1 # initial perennial seedling population size
 N0.P = 0 # initial perennial adult population size
 L0 = 0 # initial annual litter amount
 Ni.A = 1 # introduction of annual 
+Ni.S = 1 # introduction of perennial
 ```
 
-## Literature:
+## "No disease" parameters from experiments
 ```{r parameters-table, echo = F, results = 'asis'}
-kable(params, caption = "Model parameter values without disease", format = "markdown", padding = 0)
+kable(params %>% select(-notes), caption = "Model parameter values without disease", format = "markdown", padding = 0)
+```
 
-kable(params, caption = "Model parameter values with disease", format = "markdown", padding = 0)
+## "Disease" parameters from experiments
+```{r disparameters-table, echo = F, results = 'asis'}
+kable(params_dis %>% select(-notes), caption = "Model parameter values with disease", format = "markdown", padding = 0)
 ```
 
 
 # Model
 
-## Population equations:
+## Population equations
 Assume counts are being conducted in the spring  
   
-N.A[t+1] = s.A * (1-G.A) * N.A[t] + G.A * h.A * V.A * y.A * N.A[t]  
+N.A[t+1] = s.A * (1-G.A) * N.A[t] + G.A * h.A * Y.A * N.A[t]  
 annual seeds = seed bank survival + seed production  
 
 L[t+1] = a * G.A * h.A * V.A * N.A[t] + (1-b) * L[t]    
 annual litter = biomass from previous fall + decomposition  
   
-N.S[t+1] = s.S * (1-G.S) * N.S[t] + G.S * h.S * V.S * y.S * N.S[t] + h.P * V.P * y.P * N.P[t]  
+N.S[t+1] = s.S * (1-G.S) * N.S[t] + G.S * h.S * Y.S * N.S[t] + h.P * Y.P * N.P[t]  
 perennial seeds = seed bank survival + seedling seed production + adult seed production  
   
 N.P[t+1] = h.P * w.P * N.P[t] + G.S * h.S * w.S * N.S[t]  
@@ -98,20 +101,30 @@ annual seed germination = germination in the absence of litter / reduction due t
 G.S = g.S / (1 + beta.S * L[t])  
 perennial seed germination = germination in the absence of litter / reduction due to litter 
 
-## Density-dependence on growth and fecundity
-V.A = v.A / (1 + alpha.AA * G.A * h.A * N.A[t] + alpha.AP * h.P * N.P[t] + alpha.AS * h.S * G.S * N.S[t])    
+## Density-dependence on growth
+V.A = v.A / (1 + alpha.AA * G.A * N.A[t] + alpha.AP * N.P[t] + alpha.AS * G.S * N.S[t])    
 annual growth = growth in the absence of competition / (competition from annuals + competition from perennial adults + competition from perennial seedlings)
 
-V.S = v.S / (1 + alpha.SA * G.A * h.A * N.A[t] + alpha.SP * h.P * N.P[t] + alpha.SS * h.S * G.S * N.S[t])    
+V.S = v.S / (1 + alpha.SA * G.A * N.A[t] + alpha.SP * N.P[t] + alpha.SS * G.S * N.S[t])    
 perennial seedling growth = growth in the absence of competition / (competition from annuals + competition from perennial adults + competition from perennial seedlings)
 
-V.P = v.P / (1 + alpha.PA * G.A * h.A * N.A[t] + alpha.PP * h.P * N.P[t] + alpha.PS * h.S * G.S * N.S[t])    
+V.P = v.P / (1 + alpha.PA * G.A * N.A[t] + alpha.PP * N.P[t] + alpha.PS * G.S * N.S[t])    
 perennial adult growth = growth in the absence of competition / (competition from annuals + competition from perennial adults + competition from perennial seedlings)
+
+## Seed production based on biomass
+Y.A = V.A^y.A * y.Aint    
+annual seed production = annual biomass with conversion factors (from a log-log regression)
+
+Y.S = V.S^y.S * y.Sint - 1    
+perennial seedling seed production = perennial seedling biomass with conversion factors (from a log-log regression, 1 added to seed numbers before log-transforming)
+
+Y.P = V.P^y.P * y.Pint - 1    
+perennial adult seed production = perennial adult biomass with conversion factors (from a log-log regression, 1 added to seed numbers before log-transforming)
 
 
 # Function
 ```{r model}
-simFun = function(params, N0.A, N0.S, N0.P, L0, Ni.A, simtime, invtime){
+simFun = function(params, N0.A, N0.S, N0.P, L0, Ni.A, Ni.S, simtime, invtime, invader){
   
   # define parameters
   g.A = filter(params, symbol == "g.A")$value
@@ -123,6 +136,7 @@ simFun = function(params, N0.A, N0.S, N0.P, L0, Ni.A, simtime, invtime){
   alpha.AS = filter(params, symbol == "alpha.AS")$value
   alpha.AP = filter(params, symbol == "alpha.AP")$value
   y.A = filter(params, symbol == "y.A")$value
+  y.Aint = filter(params, symbol == "y.Aint")$value
   a = filter(params, symbol == "a")$value
   b = filter(params, symbol == "b")$value
   g.S = filter(params, symbol == "g.S")$value
@@ -137,7 +151,9 @@ simFun = function(params, N0.A, N0.S, N0.P, L0, Ni.A, simtime, invtime){
   alpha.PS = filter(params, symbol == "alpha.PS")$value
   alpha.PP = filter(params, symbol == "alpha.PP")$value
   y.S = filter(params, symbol == "y.S")$value
+  y.Sint = filter(params, symbol == "y.Sint")$value
   y.P = filter(params, symbol == "y.P")$value
+  y.Pint = filter(params, symbol == "y.Pint")$value
   h.S = filter(params, symbol == "h.S")$value
   h.P = filter(params, symbol == "h.P")$value
   w.S = filter(params, symbol == "w.S")$value
@@ -157,22 +173,32 @@ simFun = function(params, N0.A, N0.S, N0.P, L0, Ni.A, simtime, invtime){
   # simulate population dynamics
   for(t in 1:(simtime - 1)){	
     
-    # introduce annual at t=100
-    N.A[t] = ifelse(N0.A == 0 & t == invtime, Ni.A, N.A[t])
+    # introduce invader
+    N.A[t] = ifelse(t == invtime & invader == "annual", Ni.A, N.A[t])
+    N.S[t] = ifelse(t == invtime & invader == "perennial", Ni.S, N.S[t])
     
     # reduce germination due to litter
     G.A = g.A / (1 + beta.A * L[t])
     G.S = g.S / (1 + beta.S * L[t])
   
-    # reduce fecundity or growth due to competition
-    V.A = v.A / (1 + alpha.AA * G.A * h.A * N.A[t] + alpha.AP * h.P * N.P[t] + alpha.AS * h.S * G.S * N.S[t]) 
-    V.S = v.S / (1 + alpha.SA * G.A * h.A * N.A[t] + alpha.SP * h.P * N.P[t] + alpha.SS * h.S * G.S * N.S[t])
-    V.P = v.P / (1 + alpha.PA * G.A * h.A * N.A[t] + alpha.PP * h.P * N.P[t] + alpha.PS * h.S * G.S * N.S[t])
+    # reduce growth due to competition
+    V.A = v.A / (1 + alpha.AA * G.A * N.A[t] + alpha.AP * N.P[t] + alpha.AS * G.S * N.S[t])    
+    V.S = v.S / (1 + alpha.SA * G.A * N.A[t] + alpha.SP * N.P[t] + alpha.SS * G.S * N.S[t]) 
+    V.P = v.P / (1 + alpha.PA * G.A * N.A[t] + alpha.PP * N.P[t] + alpha.PS * G.S * N.S[t])  
+    
+    # seed production based on biomass
+    Y.A = V.A^y.A * y.Aint
+    # Y.S = V.S^y.S * y.Sint 
+    Y.S = V.S^y.S * y.Sint - 1
+    Y.S = ifelse(Y.S < 0, 0, Y.S)
+    # Y.P = V.P^y.P * y.Pint
+    Y.P = V.P^y.P * y.Pint - 1
+    Y.P = ifelse(Y.P < 0, 0, Y.P)
     
     # population size
-    N.A[t+1] = s.A * (1-G.A) * N.A[t] + G.A * h.A * V.A * y.A * N.A[t]
+    N.A[t+1] = s.A * (1-G.A) * N.A[t] + G.A * h.A * Y.A * N.A[t]  
     L[t+1] = a * G.A * h.A * V.A * N.A[t] + (1-b) * L[t]    
-    N.S[t+1] = s.S * (1-G.S) * N.S[t] + G.S * h.S * V.S * y.S * N.S[t] + h.P * V.P * y.P * N.P[t]
+    N.S[t+1] = s.S * (1-G.S) * N.S[t] + G.S * h.S * Y.S * N.S[t] + h.P * Y.P * N.P[t]
     N.P[t+1] = h.P * w.P * N.P[t] + G.S * h.S * w.S * N.S[t]  
     
     # correct to prevent negative numbers
@@ -192,10 +218,13 @@ simFun = function(params, N0.A, N0.S, N0.P, L0, Ni.A, simtime, invtime){
 
 # Simulations
 
-## No disease
-```{r no-dis, tidy = F}
-noDisSim <- simFun(params, N0.A, N0.S, N0.P, L0, Ni.A, simtime, invtime)
-noDisSim %>%
+## No disease, Microstegium by itself
+```{r no-dis-mv-alone, tidy = F}
+# run simulation
+no_dis_mv_alone_sim <- simFun(params, N0.A, N0.S = 0, N0.P, L0, Ni.A, Ni.S, simtime, invtime, "none")
+
+# figure of time series
+no_dis_mv_alone_sim %>%
   ggplot(aes(x = time, y = log(N+1), color = species)) +
   geom_line(size = 1.5) + 
   theme(axis.text = element_text(size = axisText),
@@ -203,25 +232,20 @@ noDisSim %>%
         legend.text = element_text(size = legendText),
         legend.title = element_text(size = legendTitle)) +
   scale_color_manual(values = colPal)
+
+# save final density
+no_dis_mv_alone_pop <- filter(no_dis_mv_alone_sim, species == "Microstegium" & time == max(time)) %>%
+  mutate(disease = "Without disease",
+         interaction = "alone")
 ```
 
-### Microstegium on non-transformed scale
-```{r mv-zoom, tidy = F}
-noDisSim %>%
-  filter(species %in% c("Microstegium", "Microstegium litter")) %>%
-  ggplot(aes(x = time, y = N, color = species)) +
-  geom_line(size = 1.5) + 
-  theme(axis.text = element_text(size = axisText),
-        axis.title = element_text(size = axisTitle),
-        legend.text = element_text(size = legendText),
-        legend.title = element_text(size = legendTitle)) +
-  scale_color_manual(values = colPal[3:4])
-```
+## No disease, Microstegium invades Elymus
+```{r no-dis-mv-invades, tidy = F}
+# run simulation
+no_dis_mv_invades_sim <- simFun(params, N0.A = 0, N0.S, N0.P, L0, Ni.A, Ni.S, simtime, invtime, "annual")
 
-## With disease
-```{r no-dis, tidy = F}
-disSim <- simFun(params_dis, N0.A, N0.S, N0.P, L0, Ni.A, simtime, invtime)
-disSim %>%
+# figure of time series
+no_dis_mv_invades_sim %>%
   ggplot(aes(x = time, y = log(N+1), color = species)) +
   geom_line(size = 1.5) + 
   theme(axis.text = element_text(size = axisText),
@@ -229,19 +253,28 @@ disSim %>%
         legend.text = element_text(size = legendText),
         legend.title = element_text(size = legendTitle)) +
   scale_color_manual(values = colPal)
+
+# save final density
+no_dis_mv_invades_pop <- filter(no_dis_mv_invades_sim, species == "Microstegium" & time == max(time)) %>%
+  mutate(disease = "Without disease",
+         interaction = "invader")
+
+no_dis_ev_resident_pop <- filter(no_dis_mv_invades_sim, species %in% c("Elymus adult", "Elymus seedling") & time == max(time)) %>%
+  pivot_wider(names_from = species, values_from = N) %>%
+  rename("Elymus_adult" = "Elymus adult", "Elymus_seedling" = "Elymus seedling") %>%
+  mutate(species = "Elymus",
+         N = Elymus_adult + Elymus_seedling,
+         disease = "Without disease",
+         interaction = "resident")
 ```
 
-### Time to extinction?
-```{r dis-elymus-time, tidy = F}
-disSim %>%
-  filter(species == "Elymus seedling" & N == 0) %>%
-  filter(time == min(time))
-```
+## No disease, co-introduced
+```{r no-dis-co-intro, tidy = F}
+# run simulation
+no_dis_co_intro_sim <- simFun(params, N0.A = 100, N0.S = 100, N0.P, L0, Ni.A, Ni.S, simtime, invtime, "none")
 
-## No disease co-introduction
-```{r co-no-dis, tidy = F}
-coNoDisSim <- simFun(params, N0.A, N0.S, N0.P, L0, Ni.A, simtime, 1)
-coNoDisSim %>%
+# figure of time series
+no_dis_co_intro_sim %>%
   ggplot(aes(x = time, y = log(N+1), color = species)) +
   geom_line(size = 1.5) + 
   theme(axis.text = element_text(size = axisText),
@@ -249,4 +282,263 @@ coNoDisSim %>%
         legend.text = element_text(size = legendText),
         legend.title = element_text(size = legendTitle)) +
   scale_color_manual(values = colPal)
+
+# save final density
+no_dis_co_intro_mv_pop <- filter(no_dis_co_intro_sim, species == "Microstegium" & time == max(time)) %>%
+  mutate(disease = "Without disease",
+         interaction = "in competition")
+
+no_dis_co_intro_ev_pop <- filter(no_dis_co_intro_sim, species %in% c("Elymus adult", "Elymus seedling") & time == max(time)) %>%
+  pivot_wider(names_from = species, values_from = N) %>%
+  rename("Elymus_adult" = "Elymus adult", "Elymus_seedling" = "Elymus seedling") %>%
+  mutate(species = "Elymus",
+         N = Elymus_adult + Elymus_seedling,
+         disease = "Without disease",
+         interaction = "in competition")
+```
+
+## Disease, Microstegium by itself
+```{r dis-mv-alone, tidy = F}
+# run simulation
+dis_mv_alone_sim <- simFun(params_dis, N0.A, N0.S = 0, N0.P, L0, Ni.A, Ni.S, simtime, invtime, "none")
+
+# figure of time series
+dis_mv_alone_sim %>%
+  ggplot(aes(x = time, y = log(N+1), color = species)) +
+  geom_line(size = 1.5) + 
+  theme(axis.text = element_text(size = axisText),
+        axis.title = element_text(size = axisTitle),
+        legend.text = element_text(size = legendText),
+        legend.title = element_text(size = legendTitle)) +
+  scale_color_manual(values = colPal)
+
+# save final density
+dis_mv_alone_pop <- filter(dis_mv_alone_sim, species == "Microstegium" & time == max(time)) %>%
+  mutate(disease = "With disease",
+         interaction = "alone")
+```
+
+## Disease, Microstegium invades Elymus
+```{r dis-mv-invades, tidy = F}
+# run simulation
+dis_mv_invades_sim <- simFun(params_dis, N0.A = 0, N0.S, N0.P, L0, Ni.A, Ni.S, simtime, invtime, "annual")
+
+# figure of time series
+dis_mv_invades_sim %>%
+  ggplot(aes(x = time, y = log(N+1), color = species)) +
+  geom_line(size = 1.5) + 
+  theme(axis.text = element_text(size = axisText),
+        axis.title = element_text(size = axisTitle),
+        legend.text = element_text(size = legendText),
+        legend.title = element_text(size = legendTitle)) +
+  scale_color_manual(values = colPal)
+
+# save final density
+dis_mv_invades_pop <- filter(dis_mv_invades_sim, species == "Microstegium" & time == max(time)) %>%
+  mutate(disease = "With disease",
+         interaction = "invader")
+
+dis_ev_resident_pop <- filter(dis_mv_invades_sim, species %in% c("Elymus adult", "Elymus seedling") & time == max(time)) %>%
+  pivot_wider(names_from = species, values_from = N) %>%
+  rename("Elymus_adult" = "Elymus adult", "Elymus_seedling" = "Elymus seedling") %>%
+  mutate(species = "Elymus",
+         N = Elymus_adult + Elymus_seedling,
+         disease = "With disease",
+         interaction = "resident")
+```
+
+## Disease, co-introduced
+```{r dis-co-intro, tidy = F}
+# run simulation
+dis_co_intro_sim <- simFun(params_dis, N0.A = 100, N0.S = 100, N0.P, L0, Ni.A, Ni.S, simtime, invtime, "none")
+
+# figure of time series
+dis_co_intro_sim %>%
+  ggplot(aes(x = time, y = log(N+1), color = species)) +
+  geom_line(size = 1.5) + 
+  theme(axis.text = element_text(size = axisText),
+        axis.title = element_text(size = axisTitle),
+        legend.text = element_text(size = legendText),
+        legend.title = element_text(size = legendTitle)) +
+  scale_color_manual(values = colPal)
+
+# save final density
+dis_co_intro_mv_pop <- filter(dis_co_intro_sim, species == "Microstegium" & time == max(time)) %>%
+  mutate(disease = "With disease",
+         interaction = "in competition")
+
+dis_co_intro_ev_pop <- filter(dis_co_intro_sim, species %in% c("Elymus adult", "Elymus seedling") & time == max(time)) %>%
+  pivot_wider(names_from = species, values_from = N) %>%
+  rename("Elymus_adult" = "Elymus adult", "Elymus_seedling" = "Elymus seedling") %>%
+  mutate(species = "Elymus",
+         N = Elymus_adult + Elymus_seedling,
+         disease = "With disease",
+         interaction = "in competition")
+```
+
+## No disease, Elymus by itself
+```{r no-dis-ev-alone, tidy = F}
+# run simulation
+no_dis_ev_alone_sim <- simFun(params, N0.A = 0, N0.S, N0.P, L0, Ni.A, Ni.S, simtime, invtime, "none")
+
+# figure of time series
+no_dis_ev_alone_sim %>%
+  ggplot(aes(x = time, y = log(N+1), color = species)) +
+  geom_line(size = 1.5) + 
+  theme(axis.text = element_text(size = axisText),
+        axis.title = element_text(size = axisTitle),
+        legend.text = element_text(size = legendText),
+        legend.title = element_text(size = legendTitle)) +
+  scale_color_manual(values = colPal)
+
+# save final density
+no_dis_ev_alone_pop <- filter(no_dis_ev_alone_sim, species %in% c("Elymus adult", "Elymus seedling") & time == max(time)) %>%
+  pivot_wider(names_from = species, values_from = N) %>%
+  rename("Elymus_adult" = "Elymus adult", "Elymus_seedling" = "Elymus seedling") %>%
+  mutate(species = "Elymus",
+         N = Elymus_adult + Elymus_seedling,
+         disease = "Without disease",
+         interaction = "alone")
+```
+
+## No disease, Elymus invades Microstegium
+```{r no-dis-ev-invades, tidy = F}
+# run simulation
+no_dis_ev_invades_sim <- simFun(params, N0.A, N0.S = 0, N0.P, L0, Ni.A, Ni.S, simtime, invtime, "perennial")
+
+# figure of time series
+no_dis_ev_invades_sim %>%
+  ggplot(aes(x = time, y = log(N+1), color = species)) +
+  geom_line(size = 1.5) + 
+  theme(axis.text = element_text(size = axisText),
+        axis.title = element_text(size = axisTitle),
+        legend.text = element_text(size = legendText),
+        legend.title = element_text(size = legendTitle)) +
+  scale_color_manual(values = colPal)
+
+# save final density
+no_dis_ev_invades_pop <- filter(no_dis_ev_invades_sim, species %in% c("Elymus adult", "Elymus seedling") & time == max(time)) %>%
+  pivot_wider(names_from = species, values_from = N) %>%
+  rename("Elymus_adult" = "Elymus adult", "Elymus_seedling" = "Elymus seedling") %>%
+  mutate(species = "Elymus",
+         N = Elymus_adult + Elymus_seedling,
+         disease = "Without disease",
+         interaction = "invader")
+
+no_dis_mv_resident_pop <- filter(no_dis_ev_invades_sim, species == "Microstegium" & time == max(time)) %>%
+  mutate(disease = "Without disease",
+         interaction = "resident")
+```
+
+## Disease, Elymus by itself
+```{r dis-ev-alone, tidy = F}
+# run simulation
+dis_ev_alone_sim <- simFun(params_dis, N0.A = 0, N0.S, N0.P, L0, Ni.A, Ni.S, simtime, invtime, "none")
+
+# figure of time series
+dis_ev_alone_sim %>%
+  ggplot(aes(x = time, y = log(N+1), color = species)) +
+  geom_line(size = 1.5) + 
+  theme(axis.text = element_text(size = axisText),
+        axis.title = element_text(size = axisTitle),
+        legend.text = element_text(size = legendText),
+        legend.title = element_text(size = legendTitle)) +
+  scale_color_manual(values = colPal)
+
+# save final density
+dis_ev_alone_pop <- filter(dis_ev_alone_sim, species %in% c("Elymus adult", "Elymus seedling") & time == max(time)) %>%
+  pivot_wider(names_from = species, values_from = N) %>%
+  rename("Elymus_adult" = "Elymus adult", "Elymus_seedling" = "Elymus seedling") %>%
+  mutate(species = "Elymus",
+         N = Elymus_adult + Elymus_seedling,
+         disease = "With disease",
+         interaction = "alone")
+```
+
+## Disease, Elymus invades Microstegium
+```{r dis-ev-invades, tidy = F}
+# run simulation
+dis_ev_invades_sim <- simFun(params_dis, N0.A, N0.S = 0, N0.P, L0, Ni.A, Ni.S, simtime, invtime, "perennial")
+
+# figure of time series
+dis_ev_invades_sim %>%
+  ggplot(aes(x = time, y = log(N+1), color = species)) +
+  geom_line(size = 1.5) + 
+  theme(axis.text = element_text(size = axisText),
+        axis.title = element_text(size = axisTitle),
+        legend.text = element_text(size = legendText),
+        legend.title = element_text(size = legendTitle)) +
+  scale_color_manual(values = colPal)
+
+# save final density
+dis_ev_invades_pop <- filter(dis_ev_invades_sim, species %in% c("Elymus adult", "Elymus seedling") & time == max(time)) %>%
+  pivot_wider(names_from = species, values_from = N) %>%
+  rename("Elymus_adult" = "Elymus adult", "Elymus_seedling" = "Elymus seedling") %>%
+  mutate(species = "Elymus",
+         N = Elymus_adult + Elymus_seedling,
+         disease = "With disease",
+         interaction = "invader")
+
+dis_mv_resident_pop <- filter(dis_ev_invades_sim, species == "Microstegium" & time == max(time)) %>%
+  mutate(disease = "With disease",
+         interaction = "resident")
+```
+
+# Population Figure
+
+```{r population-figure, tidy = F}
+
+# combine data
+pop_fig_dat <- no_dis_mv_alone_pop %>%
+  full_join(no_dis_mv_invades_pop) %>%
+  full_join(no_dis_ev_resident_pop) %>%
+  full_join(dis_mv_alone_pop) %>%
+  full_join(dis_mv_invades_pop) %>%
+  full_join(dis_ev_resident_pop) %>%
+  full_join(no_dis_ev_alone_pop) %>%
+  full_join(no_dis_ev_invades_pop) %>%
+  full_join(no_dis_mv_resident_pop) %>%
+  full_join(dis_ev_alone_pop) %>%
+  full_join(dis_ev_invades_pop) %>%
+  full_join(dis_mv_resident_pop) %>%
+  mutate(species = fct_relevel(species, "Microstegium"),
+         N = N + 1,
+         log_N = log(N),
+         disease = fct_relevel(disease, "Without disease"))
+
+# template theme
+temp_theme <- theme_bw() +
+  theme(axis.text = element_text(size = 10, color="black"),
+        axis.title = element_text(size = 12),
+        panel.background = element_blank(),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        legend.text = element_text(size = 10),
+        legend.title = element_blank(),
+        legend.box.margin = margin(-10, -10, -10, -10),
+        legend.position = "bottom",
+        legend.direction = "horizontal",
+        strip.background = element_blank(),
+        strip.text = element_text(size = 10, face = "italic"),
+        strip.placement = "outside",
+        plot.title = element_text(size = 12, hjust = 0.5))
+
+# colors
+col_pal = c("#55A48B", "#C0A76D")
+
+# figure
+pop_fig <- ggplot(pop_fig_dat, aes(x = interaction, y = N)) +
+  geom_bar(stat = "identity", position = "dodge", aes(fill = disease)) +
+  scale_fill_manual(values = col_pal) +
+  facet_wrap(~species, nrow = 1, scales = "free") +
+  xlab("Status") +
+  ylab("Simulated long-term population size") +
+  temp_theme
+pop_fig
+
+# save figure
+pdf("../output/simulated_long_term_pop_figure.pdf", width = 6, height = 4)
+pop_fig
+dev.off()
+
 ```

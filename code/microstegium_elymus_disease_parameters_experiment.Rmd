@@ -38,7 +38,7 @@ library(glmmTMB)
 *Microstegium vimineum* germination from 200 planted seeds and an estimated number of background seeds based on a neighboring subplot in plots with litter removed. Methods: field_litter_experiment_2018.docx.
 
 ```{r g.A}
-# import model
+# import models
 load("../../big-oaks-field-experiment-2018-2019/microstegium-bipolaris/output/mv_germination_litter_model_2018_litter_exp.rda")
 
 # extract fixed effects
@@ -125,14 +125,19 @@ A_alpha_dat %>%
 ## conversion from annual biomass to seed production
 
 ```{r y.A, out.width = "50%"}
+# treatments are combined because fungicide treatment values led to fluctuations in Elymus seedlings that made simulations difficult to interpret
+
 # import model
-load("../../big-oaks-field-experiment-2018-2019/microstegium-bipolaris/output/mv_seeds_per_biomass_model_2018_2019_density_exp.rda")
+load("../../big-oaks-field-experiment-2018-2019/microstegium-bipolaris/output/mv_seeds_per_biomass_no_treatment_model_2018_2019_density_exp.rda")
 
 # look at coefficients
-summary(mv_seed_bio_mod)
+summary(mv_seed_bio_no_treat_mod)
+
+# manually define intercept: intercept + year2 
+(y.Aint0 <- exp(6.9224 - 2.4754))
 
 # manually add up relevant coefficients (biomass, year2:biomass)
-(y.A0 <- 10.264 + 74.136)
+(y.A <- 0.2299 + 0.6077)
 ```
 
 ## annual seed viability
@@ -141,7 +146,7 @@ Using Fig. 2A from Redwood et al. (2018), 40% of the seeds survive from December
 ```{r w.A, out.width = "50%"}
 include_graphics("../data/lit_figures/Redwood_2018_Fig2A.jpg")
 w.A <- 0.4
-(y.A <- y.A0 * w.A)
+(y.Aint <- y.Aint0 * w.A)
 (s.A <- s.A0 / w.A)
 ```
 
@@ -227,25 +232,19 @@ Same experiment as above except also using plots with litter added
 
 ```{r beta.S, out.width = "50%", tidy = F}
 
-# subset data
-S_litter_dat <- filter(S_house_germ_dat, SpPresent == "Ev")  %>%
-  mutate(prop_germ = NewGermEv/50)
+# presence/absence of litter matters
+# based on ev_germination_analysis_2018_litter_exp, seed germination basically drops to zero with any litter in the field
+# better estimate from greenhouse
+# the presence/absence function made the simulation act weird, so I fit a Beverton-Holt function to the greenhouse data
 
-# fit non-linear curve
-beta.S_mod <- nls(prop_germ ~ germ0 / (1 + beta * Litter.g), 
-                start = list(germ0 = g.S_house$g.S, beta = 1), 
-                data = S_litter_dat)
-summary(beta.S_mod)
+# import model
+load("../../microstegium-litter-reu/output/ev_beverton_holt_establishment_modl.rda") 
 
-# look at fit
-litter_S_germ_df <- tibble(Litter.g = seq(0, 3.7, length.out = 100))
-litter_S_germ_df$prop_germ <- predict(beta.S_mod, newdata = litter_S_germ_df)
-ggplot(S_litter_dat, aes(x = Litter.g, y = prop_germ)) +
-  geom_point(size = 2) +
-  geom_line(data = litter_S_germ_df)
+# summary
+summary(ev_bh_mod)
 
 # save beta
-(beta.S <- coef(beta.S_mod)[2])
+(beta.S <- fixef(ev_bh_mod)[2, 1])
 ```
 
 ## survival of dormant perennial seeds
@@ -315,20 +314,26 @@ P_alpha_dat %>%
 
 ## conversion from perennial biomass to seed production
 
-```{r y.SP, out.width = "50%"}
+```{r y.S and y.P, out.width = "50%"}
+# treatments are combined because fungicide treatment values led to fluctuations in Elymus seedlings that made simulations difficult to interpret
+
 # import model
-load("../../big-oaks-field-experiment-2018-2019/microstegium-bipolaris/output/ev_seeds_per_biomass_model_2019_density_exp.rda")
+load("../../big-oaks-field-experiment-2018-2019/microstegium-bipolaris/output/ev_seeds_per_biomass_no_treatment_model_2019_density_exp.rda")
 
 # look at coefficients
-summary(ev_seed_bio_mod)
+summary(ev_seed_bio_no_treat_mod)
+
+# manually add up intercept values (intercept, age)
+(y.Sint0 <- exp(2.0709 - 0.5426))
+(y.Pint0 <- exp(2.0709))
 
 # manually add up relevant coefficients (biomass, age:biomass)
-(y.S0 <- 18.6107 - 12.2603)
-(y.P0 <- 18.6107)
+(y.S <- 1.1918 - 0.3162)
+(y.P <- 1.1918)
 
 # multiply by viability
-(y.S <- y.S0 * w.S)
-(y.P <- y.P0 * w.S)
+(y.Sint <- y.Sint0 * w.S)
+(y.Pint <- y.Pint0 * w.S)
 ```
 
 ## seedling and adult survival
