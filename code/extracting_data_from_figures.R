@@ -97,9 +97,32 @@ df_wi15_3b$seeds = round(df_wi15_3b$y)
 # DeMeester and Richter 2010 Fig. 3
 (cal_dr10_3 = ReadAndCal("./data/lit_figures/DeMeester_2010_Fig3.jpg"))
 (data_dr10_3 = DigitData(col = 'red'))
-df_dr10_3 = Calibrate(data_dr10_3, cal_dr10_3, 0, 400, 0, 120)
+df_dr10_3 = Calibrate(data_dr10_3, cal_dr10_3, 0, 300, 0, 100)
 df_dr10_3$days = round(df_dr10_3$x)
 df_dr10_3$mass.prop = round(df_dr10_3$y)
+df_dr10_3$plot = c("weeded", "M. vimineum")
+
+# Emery et al. 2013 Fig. 3A
+(cal_em13_3A = ReadAndCal("./data/lit_figures/Emery_2013_Fig3.jpg"))
+(data_em13_3A = DigitData(col = 'red'))
+df_em13_3A = Calibrate(data_em13_3A, cal_em13_3A, 0, 1, 0, 700)
+df_em13_3A$treatment = c("reference", "reference")
+df_em13_3A$year = c(2009, 2010)
+df_em13_3A$seedlings = round(df_em13_3A$y)
+
+# Emery et al. 2013 Fig. 3B
+(cal_em13_3B = ReadAndCal("./data/lit_figures/Emery_2013_Fig3.jpg"))
+(data_em13_3B = DigitData(col = 'red'))
+df_em13_3B = Calibrate(data_em13_3B, cal_em13_3B, 0, 1, 0, 200)
+df_em13_3B$treatment = c("reference", "reference")
+df_em13_3B$year = c(2009, 2010)
+df_em13_3B$adults = round(df_em13_3B$y)
+
+# combine Emery data
+df_em13_3 <- merge(df_em13_3A[,c("treatment", "year", "seedlings")],
+                   df_em13_3B[,c("treatment", "year", "adults")],
+                   all = T)
+df_em13_3$establishment = df_em13_3$adults / df_em13_3$seedlings
 
 
 #### Save values ####
@@ -108,4 +131,5 @@ write.csv(df_rw18_2b[,c("month", "germ")], "./data/Redwood_2018_Fig2B.csv", row.
 write.csv(df_fg98_1b[,c("treatment", "litter.g")], "./data/Foster_1998_Fig1B.csv", row.names = F)
 write.csv(df_fg98_3a[,c("treatment", "germ")], "./data/Foster_1998_Fig3A.csv", row.names = F)
 write.csv(df_wi15_3b[,c("biomass.g", "seeds")], "./data/Wilson_2015_Fig3B.csv", row.names = F)
-write.csv(df_dr10_3[,c("days", "mass.prop")], "./data/DeMeester_2010_Fig3.csv", row.names = F)
+write.csv(df_dr10_3[,c("plot", "days", "mass.prop")], "./data/DeMeester_2010_Fig3.csv", row.names = F)
+write.csv(df_em13_3, "./data/Emery_2013_Fig3.csv", row.names = F)
