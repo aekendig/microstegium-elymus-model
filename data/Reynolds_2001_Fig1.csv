@@ -1,0 +1,19 @@
+"litter","species","germ.prop"
+"bare","N. pulchra",0.51
+"bare","F. rubra",0.57
+"bare","C. nutkaensis",0.5
+"bare","D. holciformis",0.5
+"bare","F. arundinaceae",0.8
+"bare","H. lanatus",0.87
+"light","N. pulchra",0.23
+"light","F. rubra",0.39
+"light","C. nutkaensis",0.29
+"light","D. holciformis",0.34
+"light","F. arundinaceae",0.62
+"light","H. lanatus",0.51
+"heavy","N. pulchra",0.29
+"heavy","F. rubra",0.26
+"heavy","C. nutkaensis",0.33
+"heavy","D. holciformis",0.26
+"heavy","F. arundinaceae",0.58
+"heavy","H. lanatus",0.29

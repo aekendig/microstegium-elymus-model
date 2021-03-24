@@ -97,32 +97,56 @@ df_wi15_3b$seeds = round(df_wi15_3b$y)
 # DeMeester and Richter 2010 Fig. 3
 (cal_dr10_3 = ReadAndCal("./data/lit_figures/DeMeester_2010_Fig3.jpg"))
 (data_dr10_3 = DigitData(col = 'red'))
-df_dr10_3 = Calibrate(data_dr10_3, cal_dr10_3, 0, 300, 0, 100)
+df_dr10_3 = Calibrate(data_dr10_3, cal_dr10_3, 0, 400, 0, 120)
 df_dr10_3$days = round(df_dr10_3$x)
-df_dr10_3$mass.prop = round(df_dr10_3$y)
-df_dr10_3$plot = c("weeded", "M. vimineum")
+df_dr10_3$mass.prop = round(df_dr10_3$y)/100
+df_dr10_3$plot = c("M. vimineum", "weeded", "M. vimineum")
 
 # Emery et al. 2013 Fig. 3A
 (cal_em13_3A = ReadAndCal("./data/lit_figures/Emery_2013_Fig3.jpg"))
 (data_em13_3A = DigitData(col = 'red'))
 df_em13_3A = Calibrate(data_em13_3A, cal_em13_3A, 0, 1, 0, 700)
-df_em13_3A$treatment = c("reference", "reference")
-df_em13_3A$year = c(2009, 2010)
+df_em13_3A$treatment = c(rep(c("reference", "spring09", "spring0910", "spring09herb"), each = 3), rep(c("spring10", "fall09", "fall09herb", "herb"), each = 2))
+df_em13_3A$year = c(rep(c(2009, 2010, 2011), 4), rep(c(2010, 2011), 4))
 df_em13_3A$seedlings = round(df_em13_3A$y)
 
 # Emery et al. 2013 Fig. 3B
 (cal_em13_3B = ReadAndCal("./data/lit_figures/Emery_2013_Fig3.jpg"))
 (data_em13_3B = DigitData(col = 'red'))
 df_em13_3B = Calibrate(data_em13_3B, cal_em13_3B, 0, 1, 0, 200)
-df_em13_3B$treatment = c("reference", "reference")
-df_em13_3B$year = c(2009, 2010)
+df_em13_3B$treatment = c(rep(c("reference", "spring09", "spring0910", "spring09herb"), each = 2), "spring10", "fall09", "fall09herb", "herb")
+df_em13_3B$year = c(rep(c(2009, 2010), 4), rep(2010, 4))
 df_em13_3B$adults = round(df_em13_3B$y)
 
 # combine Emery data
 df_em13_3 <- merge(df_em13_3A[,c("treatment", "year", "seedlings")],
                    df_em13_3B[,c("treatment", "year", "adults")],
                    all = T)
-df_em13_3$establishment = df_em13_3$adults / df_em13_3$seedlings
+df_em13_3$establishment = round(df_em13_3$adults / df_em13_3$seedlings, digits = 3)
+plot(df_em13_3$seedlings, df_em13_3$establishment, type = "p")
+
+# Warren et al. 2013 Fig. 2
+(cal_wa13_2 = ReadAndCal("./data/lit_figures/Warren_2013_Fig2.jpg"))
+(data_wa13_2 = DigitData(col = 'red'))
+df_wa13_2 = Calibrate(data_wa13_2, cal_wa13_2, 0, 5, 0, 100)
+df_wa13_2$litter_depth.cm = c(0, 1, 5)
+df_wa13_2$seedling_survival = round(df_wa13_2$y/100, digits = 2)
+
+# Reynolds et al. 2001 Fig. 1
+(cal_ry01_1 = ReadAndCal("./data/lit_figures/Reynolds_2001_Fig1.jpg"))
+(data_ry01_1 = DigitData(col = 'red'))
+df_ry01_1 = Calibrate(data_ry01_1, cal_ry01_1, 0, 1, 0, 1)
+df_ry01_1$litter = rep(c("bare", "light", "heavy"), each = 6)
+df_ry01_1$species = rep(c("N. pulchra", "F. rubra", "C. nutkaensis", "D. holciformis", "F. arundinaceae", "H. lanatus"), 3)
+df_ry01_1$germ.prop = round(df_ry01_1$y, digits = 2)
+
+# Malmstrom et al. 2005 Fig. 2
+(cal_ma05_2 = ReadAndCal("./data/lit_figures/Malmstrom_2005_Fig2.jpg"))
+(data_ma05_2 = DigitData(col = 'red'))
+df_ma05_2 = Calibrate(data_ma05_2, cal_ma05_2, 0, 1, 0, 250)
+df_ma05_2$experiment = c(rep(1, 10), rep(2, 8))
+df_ma05_2$species = c("EGM", "EGY", "EMC", "EMT", "HBY", "KML", "KMO", "KMY", "NPS", "NPY", "EEY", "EMC", "EMT", "NPC", "NPM", "NPS", "NPT", "NPY")
+df_ma05_2$biomass.g = round(df_ma05_2$y, digits = 2)
 
 
 #### Save values ####
@@ -133,3 +157,80 @@ write.csv(df_fg98_3a[,c("treatment", "germ")], "./data/Foster_1998_Fig3A.csv", r
 write.csv(df_wi15_3b[,c("biomass.g", "seeds")], "./data/Wilson_2015_Fig3B.csv", row.names = F)
 write.csv(df_dr10_3[,c("plot", "days", "mass.prop")], "./data/DeMeester_2010_Fig3.csv", row.names = F)
 write.csv(df_em13_3, "./data/Emery_2013_Fig3.csv", row.names = F)
+write.csv(df_wa13_2[,c("litter_depth.cm", "seedling_survival")], "./data/Warren_2013_Fig2.csv", row.names = F)
+write.csv(df_ry01_1[,c("litter", "species", "germ.prop")], "./data/Reynolds_2001_Fig1.csv", row.names = F)
+write.csv(df_ma05_2[,c("experiment", "species", "biomass.g")], "./data/Malmstrom_2005_Fig2.csv", row.names = F)
+
+
+#### data calculations ####
+
+# load packages
+library(tidyverse)
+
+
+#### convert litter depth to weight ####
+
+# import Warren values
+war <- read_csv("data/Warren_2013_Fig2.csv")
+
+# values from Ash 1995
+ash <- tibble(litter_weight.gm2 = c(544.76, 610.05, 471.30, 910.02, 544.57, 463.35, 524.94, 752.11),
+              litter_depth.mm = c(62, 14, 64, 47, 58, 36, 60, 55)) %>%
+  mutate(litter_depth.cm = litter_depth.mm * 0.1,
+         cutting = rep(c("before", "after"), 4),
+         cover = rep(rep(c("clear", "forest"), each = 2), 2),
+         site = rep(c("BC", "RK"), each = 4),
+         site_cover = paste(site, cover, sep = "_"))
+
+# visualize
+ggplot(ash, aes(litter_depth.cm, litter_weight.gm2)) +
+  geom_point(aes(color = cutting, shape = site_cover)) +
+  geom_smooth(method = "lm", formula = y ~ x)
+# not a linear relationship
+
+# regression
+mod <- lm(litter_weight.gm2 ~ litter_depth.cm, data = ash)
+summary(mod)
+
+# average
+mean(ash$litter_depth.cm) # 4.95
+mean(ash$litter_weight.gm2) # 603
+
+# calculate beta
+war
+# 0.08 = 0.96/(1 + B * 603)
+# 1 + B * 603 = 0.96/0.08
+# B * 603 = 0.96/0.08 - 1
+(0.96/0.08 - 1)/603
+
+
+#### perennial adult survival ####
+
+# values from Lauenroth and Adler 2008
+1 - 1/5
+1 - 1/39
+
+
+#### litter effects on perennials ####
+
+# import data
+rey <- read_csv("./data/Reynolds_2001_Fig1.csv")
+
+# subset for native species
+# select bare and high litter treatments
+# make data wide
+# caculate beta (equation in section above)
+rey2 <- rey %>%
+  filter(!(species %in% c("F. arundinaceae", "H. lanatus")) & litter != "light") %>%
+  pivot_wider(names_from = litter,
+              values_from = germ.prop) %>%
+  mutate(beta = (bare/heavy - 1)/300)
+
+range(rey2$beta)
+
+
+#### perennial biomass range ####
+
+# import data
+malm <- read_csv("./data/Malmstrom_2005_Fig2.csv")
+range(malm$biomass.g)
