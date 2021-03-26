@@ -233,4 +233,4 @@ range(rey2$beta)
 
 # import data
 malm <- read_csv("./data/Malmstrom_2005_Fig2.csv")
-range(malm$biomass.g)
+range(malm$biomass.g)*0.89
