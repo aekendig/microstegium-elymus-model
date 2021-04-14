@@ -233,4 +233,12 @@ range(rey2$beta)
 
 # import data
 malm <- read_csv("./data/Malmstrom_2005_Fig2.csv")
+
+# full range
 range(malm$biomass.g)*0.89
+
+# elymus range
+malm %>% 
+  filter(substr(species, 1, 1) == "E") %>%
+  summarise(min = min(biomass.g)*0.89,
+            max = max(biomass.g)*0.89)
